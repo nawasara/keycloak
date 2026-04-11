@@ -187,6 +187,28 @@ class KeycloakClient
         return $response->successful() ? $response->json() : [];
     }
 
+    public function createClient(array $data): bool
+    {
+        return $this->api()->post($this->adminUrl('/clients'), $data)->successful();
+    }
+
+    public function updateClient(string $id, array $data): bool
+    {
+        return $this->api()->put($this->adminUrl("/clients/{$id}"), $data)->successful();
+    }
+
+    public function deleteClient(string $id): bool
+    {
+        return $this->api()->delete($this->adminUrl("/clients/{$id}"))->successful();
+    }
+
+    public function regenerateClientSecret(string $id): ?string
+    {
+        $response = $this->api()->post($this->adminUrl("/clients/{$id}/client-secret"));
+
+        return $response->successful() ? $response->json('value') : null;
+    }
+
     public function enableClient(string $id): bool
     {
         return $this->api()->put($this->adminUrl("/clients/{$id}"), ['enabled' => true])->successful();
