@@ -4,6 +4,7 @@ namespace Nawasara\Keycloak\Livewire\Client\Section;
 
 use Livewire\Component;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Nawasara\Keycloak\Services\KeycloakClient;
 
 class Table extends Component
@@ -105,6 +106,7 @@ class Table extends Component
 
     // ─── Create / Edit ──────────────────────────────────
 
+    #[On('openCreateClient')]
     public function openCreate()
     {
         $this->resetForm();

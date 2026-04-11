@@ -49,7 +49,7 @@
 
     {{-- Form Modal --}}
     <x-nawasara-ui::modal wire:model="showForm" :title="$editingId ? 'Edit Client' : 'Tambah Client'">
-        <form wire:submit="saveClient" class="space-y-4">
+        <form wire:submit="saveClient" id="kc-client-form" class="space-y-4">
             <x-nawasara-ui::form.input label="Client ID" placeholder="my-app" wire:model="formClientId" useError errorVariable="formClientId" :disabled="(bool) $editingId" />
             <x-nawasara-ui::form.input label="Nama (opsional)" placeholder="My Application" wire:model="formName" />
             <x-nawasara-ui::form.input label="Root URL (opsional)" placeholder="https://myapp.example.com" wire:model="formRootUrl" useError errorVariable="formRootUrl" />
@@ -69,11 +69,12 @@
                 <x-nawasara-ui::form.checkbox label="Service Accounts Enabled" wire:model="formServiceAccountsEnabled" />
                 <x-nawasara-ui::form.checkbox label="Direct Access Grants" wire:model="formDirectAccessGrantsEnabled" />
             </div>
-            <x-slot:footer>
-                <button type="button" wire:click="$set('showForm', false)" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
-                <x-nawasara-ui::button type="submit" color="primary">Simpan</x-nawasara-ui::button>
-            </x-slot:footer>
         </form>
+
+        <x-slot:footer>
+            <button type="button" wire:click="$set('showForm', false)" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
+            <x-nawasara-ui::button type="submit" form="kc-client-form" color="primary">Simpan</x-nawasara-ui::button>
+        </x-slot:footer>
     </x-nawasara-ui::modal>
 
     {{-- Detail Modal --}}

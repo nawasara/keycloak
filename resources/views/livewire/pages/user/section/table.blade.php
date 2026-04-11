@@ -105,14 +105,15 @@
 
     {{-- Reset Password Modal --}}
     <x-nawasara-ui::modal wire:model="showResetPassword" maxWidth="md" :title="'Reset Password: '.$resetUserName">
-        <form wire:submit="doResetPassword" class="space-y-4">
+        <form wire:submit="doResetPassword" id="kc-reset-pw-form" class="space-y-4">
             <x-nawasara-ui::form.input label="Password Baru" type="password"
                 wire:model="newPassword" usePasswordField useError errorVariable="newPassword" />
             <x-nawasara-ui::form.checkbox label="Temporary (user harus ganti saat login)" wire:model="temporary" />
-            <x-slot:footer>
-                <button type="button" wire:click="$set('showResetPassword', false)" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
-                <x-nawasara-ui::button type="submit" color="primary">Reset Password</x-nawasara-ui::button>
-            </x-slot:footer>
         </form>
+
+        <x-slot:footer>
+            <button type="button" wire:click="$set('showResetPassword', false)" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
+            <x-nawasara-ui::button type="submit" form="kc-reset-pw-form" color="primary">Reset Password</x-nawasara-ui::button>
+        </x-slot:footer>
     </x-nawasara-ui::modal>
 </div>
