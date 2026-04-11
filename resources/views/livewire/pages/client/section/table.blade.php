@@ -81,19 +81,19 @@
         @if ($detailClient)
             <div class="space-y-5">
                 <div class="grid grid-cols-2 gap-3 text-sm">
-                    <div><span class="text-gray-500">Client ID:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ $detailClient['clientId'] }}</span></div>
-                    <div><span class="text-gray-500">Protocol:</span> <span class="font-medium">{{ $detailClient['protocol'] ?? '-' }}</span></div>
-                    <div><span class="text-gray-500">Status:</span> <span class="font-medium {{ ($detailClient['enabled'] ?? false) ? 'text-green-600' : 'text-red-600' }}">{{ ($detailClient['enabled'] ?? false) ? 'Enabled' : 'Disabled' }}</span></div>
-                    <div><span class="text-gray-500">Tipe:</span> <span class="font-medium">{{ ($detailClient['publicClient'] ?? false) ? 'Public' : 'Confidential' }}</span></div>
-                    <div><span class="text-gray-500">Root URL:</span> <span class="font-medium">{{ $detailClient['rootUrl'] ?? '-' }}</span></div>
-                    <div><span class="text-gray-500">Base URL:</span> <span class="font-medium">{{ $detailClient['baseUrl'] ?? '-' }}</span></div>
-                    <div><span class="text-gray-500">Standard Flow:</span> <span class="font-medium">{{ ($detailClient['standardFlowEnabled'] ?? false) ? 'Ya' : 'Tidak' }}</span></div>
-                    <div><span class="text-gray-500">Service Account:</span> <span class="font-medium">{{ ($detailClient['serviceAccountsEnabled'] ?? false) ? 'Ya' : 'Tidak' }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Client ID:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ $detailClient['clientId'] }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Protocol:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ $detailClient['protocol'] ?? '-' }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Status:</span> <span class="font-medium {{ ($detailClient['enabled'] ?? false) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">{{ ($detailClient['enabled'] ?? false) ? 'Enabled' : 'Disabled' }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Tipe:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ ($detailClient['publicClient'] ?? false) ? 'Public' : 'Confidential' }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Root URL:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ $detailClient['rootUrl'] ?? '-' }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Base URL:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ $detailClient['baseUrl'] ?? '-' }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Standard Flow:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ ($detailClient['standardFlowEnabled'] ?? false) ? 'Ya' : 'Tidak' }}</span></div>
+                    <div><span class="text-gray-500 dark:text-neutral-400">Service Account:</span> <span class="font-medium text-gray-800 dark:text-neutral-200">{{ ($detailClient['serviceAccountsEnabled'] ?? false) ? 'Ya' : 'Tidak' }}</span></div>
                     <div class="col-span-2">
-                        <span class="text-gray-500">Redirect URIs:</span>
+                        <span class="text-gray-500 dark:text-neutral-400">Redirect URIs:</span>
                         <div class="mt-1 space-y-1">
                             @foreach ($detailClient['redirectUris'] ?? [] as $uri)
-                                <div class="text-xs font-mono bg-gray-50 dark:bg-neutral-700/50 px-2 py-1 rounded">{{ $uri }}</div>
+                                <div class="text-xs font-mono bg-gray-50 dark:bg-neutral-700/50 px-2 py-1 rounded text-gray-700 dark:text-neutral-300">{{ $uri }}</div>
                             @endforeach
                         </div>
                     </div>
@@ -104,14 +104,14 @@
                         <h4 class="font-semibold text-gray-700 dark:text-neutral-300 mb-2">Client Secret</h4>
                         @if ($secretRevealed && $detailSecret)
                             <div class="flex items-center gap-2">
-                                <code class="flex-1 text-sm bg-gray-50 dark:bg-neutral-700/50 px-3 py-2 rounded font-mono break-all">{{ $detailSecret }}</code>
-                                <button wire:click="$set('secretRevealed', false)" class="text-gray-400 hover:text-gray-600"><x-lucide-eye-off class="size-4" /></button>
+                                <code class="flex-1 text-sm bg-gray-50 dark:bg-neutral-700/50 px-3 py-2 rounded font-mono break-all text-gray-800 dark:text-neutral-200">{{ $detailSecret }}</code>
+                                <button wire:click="$set('secretRevealed', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-neutral-300"><x-lucide-eye-off class="size-4" /></button>
                             </div>
-                            <button wire:click="regenerateSecret" wire:confirm="Regenerate secret? Client lama akan berhenti bekerja." class="mt-2 inline-flex items-center gap-1.5 text-xs text-orange-600 hover:underline">
+                            <button wire:click="regenerateSecret" wire:confirm="Regenerate secret? Client lama akan berhenti bekerja." class="mt-2 inline-flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 hover:underline">
                                 <x-lucide-refresh-cw class="size-3" /> Regenerate
                             </button>
                         @else
-                            <button wire:click="revealSecret" class="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                            <button wire:click="revealSecret" class="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
                                 <x-lucide-eye class="size-4" /> Tampilkan Secret
                             </button>
                         @endif
