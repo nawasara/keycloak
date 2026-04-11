@@ -150,6 +150,53 @@ class KeycloakClient
         return $this->api()->delete($this->adminUrl("/sessions/{$sessionId}"))->successful();
     }
 
+    // ─── Clients ────────────────────────────────────────
+
+    public function getClients(array $params = []): array
+    {
+        $response = $this->api()->get($this->adminUrl('/clients'), $params);
+
+        return $response->successful() ? $response->json() : [];
+    }
+
+    public function getClient(string $id): ?array
+    {
+        $response = $this->api()->get($this->adminUrl("/clients/{$id}"));
+
+        return $response->successful() ? $response->json() : null;
+    }
+
+    public function getClientSecret(string $id): ?string
+    {
+        $response = $this->api()->get($this->adminUrl("/clients/{$id}/client-secret"));
+
+        return $response->successful() ? $response->json('value') : null;
+    }
+
+    public function getClientRoles(string $id): array
+    {
+        $response = $this->api()->get($this->adminUrl("/clients/{$id}/roles"));
+
+        return $response->successful() ? $response->json() : [];
+    }
+
+    public function getClientSessions(string $id): array
+    {
+        $response = $this->api()->get($this->adminUrl("/clients/{$id}/user-sessions"));
+
+        return $response->successful() ? $response->json() : [];
+    }
+
+    public function enableClient(string $id): bool
+    {
+        return $this->api()->put($this->adminUrl("/clients/{$id}"), ['enabled' => true])->successful();
+    }
+
+    public function disableClient(string $id): bool
+    {
+        return $this->api()->put($this->adminUrl("/clients/{$id}"), ['enabled' => false])->successful();
+    }
+
     // ─── Events ─────────────────────────────────────────
 
     public function getEvents(array $params = []): array

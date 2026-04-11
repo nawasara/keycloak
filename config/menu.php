@@ -17,6 +17,13 @@ return [
                 'navigate' => true,
             ],
             [
+                'label' => 'Clients',
+                'icon' => 'lucide-app-window',
+                'url' => url($prefix.'/clients'),
+                'permission' => 'keycloak.user.view',
+                'navigate' => true,
+            ],
+            [
                 'label' => 'Sessions',
                 'icon' => 'lucide-monitor-dot',
                 'url' => url($prefix.'/sessions'),

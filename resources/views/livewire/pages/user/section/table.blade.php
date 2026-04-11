@@ -29,18 +29,12 @@
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                        <div class="flex items-center gap-2 justify-end">
-                            <button wire:click="openDetail('{{ $user['id'] }}')" class="text-blue-600 hover:underline text-xs">Detail</button>
-                            <button wire:click="toggleEnabled('{{ $user['id'] }}', {{ ($user['enabled'] ?? false) ? 'true' : 'false' }})"
-                                class="text-{{ ($user['enabled'] ?? false) ? 'orange' : 'green' }}-600 hover:underline text-xs">
-                                {{ ($user['enabled'] ?? false) ? 'Disable' : 'Enable' }}
-                            </button>
-                            <button wire:click="openResetPassword('{{ $user['id'] }}', '{{ $user['username'] }}')"
-                                class="text-purple-600 hover:underline text-xs">Reset Password</button>
-                            <button wire:click="logoutUser('{{ $user['id'] }}', '{{ $user['username'] }}')"
-                                wire:confirm="Logout semua session {{ $user['username'] }}?"
-                                class="text-red-600 hover:underline text-xs">Logout</button>
-                        </div>
+                        <x-nawasara-ui::dropdown-menu-action :id="$user['id']" :items="[
+                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $user['id'] . '\')', 'icon' => 'lucide-eye'],
+                            ['type' => 'click', 'label' => ($user['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $user['id'] . '\', ' . (($user['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($user['enabled'] ?? false) ? 'lucide-user-x' : 'lucide-user-check'],
+                            ['type' => 'click', 'label' => 'Reset Password', 'wire:click' => 'openResetPassword(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-key-round'],
+                            ['type' => 'click', 'label' => 'Logout', 'wire:click' => 'logoutUser(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-log-out'],
+                        ]" />
                     </td>
                 </tr>
             @empty
