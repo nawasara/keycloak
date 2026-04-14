@@ -1,13 +1,5 @@
 <div>
-    <x-nawasara-ui::filter-bar searchPlaceholder="Cari client ID, nama..." searchModel="search">
-        <x-slot:actions>
-            <button type="button" wire:click="openCreate"
-                class="py-2.5 px-4 inline-flex items-center gap-x-1.5 text-sm font-medium rounded-lg border border-transparent bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:bg-green-700">
-                <x-lucide-plus class="size-4" />
-                Tambah Client
-            </button>
-        </x-slot:actions>
-    </x-nawasara-ui::filter-bar>
+    <x-nawasara-ui::filter-bar searchPlaceholder="Cari client ID, nama..." searchModel="search" />
 
     <x-nawasara-ui::table :headers="['Client ID', 'Nama', 'Protocol', 'Status', 'Tipe', '']" title="Client Apps ({{ count($this->clients) }})">
         <x-slot:table>
