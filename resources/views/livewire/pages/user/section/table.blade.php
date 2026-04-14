@@ -30,10 +30,10 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                         <x-nawasara-ui::dropdown-menu-action :id="$user['id']" :items="[
-                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $user['id'] . '\')', 'icon' => 'lucide-eye'],
-                            ['type' => 'click', 'label' => ($user['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $user['id'] . '\', ' . (($user['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($user['enabled'] ?? false) ? 'lucide-user-x' : 'lucide-user-check'],
-                            ['type' => 'click', 'label' => 'Reset Password', 'wire:click' => 'openResetPassword(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-key-round'],
-                            ['type' => 'click', 'label' => 'Logout', 'wire:click' => 'logoutUser(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-log-out'],
+                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $user['id'] . '\')', 'icon' => 'lucide-eye', 'permission' => 'keycloak.user.view'],
+                            ['type' => 'click', 'label' => ($user['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $user['id'] . '\', ' . (($user['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($user['enabled'] ?? false) ? 'lucide-user-x' : 'lucide-user-check', 'permission' => 'keycloak.user.manage'],
+                            ['type' => 'click', 'label' => 'Reset Password', 'wire:click' => 'openResetPassword(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-key-round', 'permission' => 'keycloak.user.reset_password'],
+                            ['type' => 'click', 'label' => 'Logout', 'wire:click' => 'logoutUser(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-log-out', 'confirm' => 'Logout semua session user ini?', 'permission' => 'keycloak.session.revoke'],
                         ]" />
                     </td>
                 </tr>

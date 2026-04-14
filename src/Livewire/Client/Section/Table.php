@@ -2,6 +2,7 @@
 
 namespace Nawasara\Keycloak\Livewire\Client\Section;
 
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -79,6 +80,8 @@ class Table extends Component
 
     public function revealSecret()
     {
+        Gate::authorize('keycloak.client.reveal_secret');
+
         if ($this->detailClient) {
             $this->detailSecret = $this->keycloak->getClientSecret($this->detailClient['id']);
             $this->secretRevealed = true;
@@ -87,6 +90,8 @@ class Table extends Component
 
     public function regenerateSecret()
     {
+        Gate::authorize('keycloak.client.manage');
+
         if ($this->detailClient) {
             $this->detailSecret = $this->keycloak->regenerateClientSecret($this->detailClient['id']);
             $this->secretRevealed = true;
@@ -109,12 +114,16 @@ class Table extends Component
     #[On('openCreateClient')]
     public function openCreate()
     {
+        Gate::authorize('keycloak.client.manage');
+
         $this->resetForm();
         $this->showForm = true;
     }
 
     public function openEdit(string $id)
     {
+        Gate::authorize('keycloak.client.manage');
+
         $client = $this->keycloak->getClient($id);
         if (! $client) return;
 
@@ -135,6 +144,8 @@ class Table extends Component
 
     public function saveClient()
     {
+        Gate::authorize('keycloak.client.manage');
+
         $this->validate([
             'formClientId' => 'required|max:255',
             'formName' => 'nullable|max:255',
@@ -191,6 +202,8 @@ class Table extends Component
 
     public function toggleEnabled(string $id, bool $currentlyEnabled)
     {
+        Gate::authorize('keycloak.client.manage');
+
         if ($currentlyEnabled) {
             $this->keycloak->disableClient($id);
             toaster_success('Client berhasil di-disable');
@@ -203,6 +216,8 @@ class Table extends Component
 
     public function deleteClient(string $id, string $clientId)
     {
+        Gate::authorize('keycloak.client.manage');
+
         $this->keycloak->deleteClient($id);
         toaster_success("Client {$clientId} berhasil dihapus");
         unset($this->clients);

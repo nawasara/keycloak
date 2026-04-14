@@ -32,10 +32,10 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                         <x-nawasara-ui::dropdown-menu-action :id="$client['id']" :items="[
-                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $client['id'] . '\')', 'icon' => 'lucide-eye'],
-                            ['type' => 'click', 'label' => 'Edit', 'wire:click' => 'openEdit(\'' . $client['id'] . '\')', 'icon' => 'lucide-pencil'],
-                            ['type' => 'click', 'label' => ($client['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $client['id'] . '\', ' . (($client['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($client['enabled'] ?? false) ? 'lucide-power-off' : 'lucide-power'],
-                            ['type' => 'click', 'label' => 'Hapus', 'wire:click' => 'deleteClient(\'' . $client['id'] . '\', \'' . ($client['clientId'] ?? '') . '\')', 'icon' => 'lucide-trash-2'],
+                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $client['id'] . '\')', 'icon' => 'lucide-eye', 'permission' => 'keycloak.client.view'],
+                            ['type' => 'click', 'label' => 'Edit', 'wire:click' => 'openEdit(\'' . $client['id'] . '\')', 'icon' => 'lucide-pencil', 'permission' => 'keycloak.client.manage'],
+                            ['type' => 'click', 'label' => ($client['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $client['id'] . '\', ' . (($client['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($client['enabled'] ?? false) ? 'lucide-power-off' : 'lucide-power', 'permission' => 'keycloak.client.manage'],
+                            ['type' => 'click', 'label' => 'Hapus', 'wire:click' => 'deleteClient(\'' . $client['id'] . '\', \'' . ($client['clientId'] ?? '') . '\')', 'icon' => 'lucide-trash-2', 'confirm' => 'Yakin ingin menghapus client ini?', 'permission' => 'keycloak.client.manage'],
                         ]" />
                     </td>
                 </tr>
@@ -108,13 +108,19 @@
                                 <code class="flex-1 text-sm bg-gray-50 dark:bg-neutral-700/50 px-3 py-2 rounded font-mono break-all text-gray-800 dark:text-neutral-200">{{ $detailSecret }}</code>
                                 <button wire:click="$set('secretRevealed', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-neutral-300"><x-lucide-eye-off class="size-4" /></button>
                             </div>
-                            <button wire:click="regenerateSecret" wire:confirm="Regenerate secret? Client lama akan berhenti bekerja." class="mt-2 inline-flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 hover:underline">
-                                <x-lucide-refresh-cw class="size-3" /> Regenerate
-                            </button>
+                            @can('keycloak.client.manage')
+                                <button wire:click="regenerateSecret" wire:confirm="Regenerate secret? Client lama akan berhenti bekerja." class="mt-2 inline-flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 hover:underline">
+                                    <x-lucide-refresh-cw class="size-3" /> Regenerate
+                                </button>
+                            @endcan
                         @else
-                            <button wire:click="revealSecret" class="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                                <x-lucide-eye class="size-4" /> Tampilkan Secret
-                            </button>
+                            @can('keycloak.client.reveal_secret')
+                                <button wire:click="revealSecret" class="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                                    <x-lucide-eye class="size-4" /> Tampilkan Secret
+                                </button>
+                            @else
+                                <p class="text-xs text-gray-400 italic">Tidak punya permission untuk melihat secret</p>
+                            @endcan
                         @endif
                     </div>
                 @endif

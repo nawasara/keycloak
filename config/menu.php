@@ -20,7 +20,7 @@ return [
                 'label' => 'Clients',
                 'icon' => 'lucide-app-window',
                 'url' => url($prefix.'/clients'),
-                'permission' => 'keycloak.user.view',
+                'permission' => 'keycloak.client.view',
                 'navigate' => true,
             ],
             [

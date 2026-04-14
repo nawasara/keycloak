@@ -13,6 +13,10 @@ class PermissionSeeder extends Seeder
         $permissions = [
             'keycloak.user.view',
             'keycloak.user.manage',
+            'keycloak.user.reset_password',
+            'keycloak.client.view',
+            'keycloak.client.manage',
+            'keycloak.client.reveal_secret',
             'keycloak.session.view',
             'keycloak.session.revoke',
             'keycloak.event.view',

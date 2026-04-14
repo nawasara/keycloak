@@ -2,6 +2,7 @@
 
 namespace Nawasara\Keycloak\Livewire\User\Section;
 
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Nawasara\Keycloak\Services\KeycloakClient;
@@ -86,6 +87,8 @@ class Table extends Component
 
     public function toggleEnabled(string $userId, bool $currentlyEnabled)
     {
+        Gate::authorize('keycloak.user.manage');
+
         if ($currentlyEnabled) {
             $this->keycloak->disableUser($userId);
             toaster_success('User berhasil di-disable');
@@ -98,6 +101,8 @@ class Table extends Component
 
     public function openResetPassword(string $userId, string $username)
     {
+        Gate::authorize('keycloak.user.reset_password');
+
         $this->resetUserId = $userId;
         $this->resetUserName = $username;
         $this->newPassword = '';
@@ -107,6 +112,8 @@ class Table extends Component
 
     public function doResetPassword()
     {
+        Gate::authorize('keycloak.user.reset_password');
+
         $this->validate([
             'newPassword' => 'required|min:8',
         ]);
@@ -118,6 +125,8 @@ class Table extends Component
 
     public function logoutUser(string $userId, string $username)
     {
+        Gate::authorize('keycloak.session.revoke');
+
         $this->keycloak->logoutUser($userId);
         toaster_success("Semua session {$username} berhasil di-logout");
         unset($this->users);

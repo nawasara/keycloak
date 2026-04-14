@@ -2,6 +2,7 @@
 
 namespace Nawasara\Keycloak\Livewire\Session\Section;
 
+use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Nawasara\Keycloak\Services\KeycloakClient;
@@ -33,6 +34,8 @@ class Table extends Component
 
     public function deleteSession(string $sessionId)
     {
+        Gate::authorize('keycloak.session.revoke');
+
         $this->keycloak->deleteSession($sessionId);
         toaster_success('Session berhasil di-revoke');
         unset($this->stats, $this->activeSessions);

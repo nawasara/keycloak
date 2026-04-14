@@ -4,7 +4,8 @@
 
         <x-slot name="actions">
             <x-nawasara-ui::page.actions>
-                <x-nawasara-ui::button wire:click="$dispatch('openCreateClient')" color="success">
+                <x-nawasara-ui::button wire:click="$dispatch('openCreateClient')" color="success"
+                    permission="keycloak.client.manage">
                     <x-slot:icon><x-lucide-plus class="size-4" /></x-slot:icon>
                     Tambah Client
                 </x-nawasara-ui::button>
