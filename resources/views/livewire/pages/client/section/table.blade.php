@@ -24,8 +24,8 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                         <x-nawasara-ui::dropdown-menu-action :id="$client['id']" :items="[
-                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $client['id'] . '\')', 'icon' => 'lucide-eye', 'permission' => 'keycloak.client.view'],
-                            ['type' => 'click', 'label' => 'Edit', 'wire:click' => 'openEdit(\'' . $client['id'] . '\')', 'icon' => 'lucide-pencil', 'permission' => 'keycloak.client.manage'],
+                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $client['id'] . '\')', 'modal' => 'kc-client-detail', 'icon' => 'lucide-eye', 'permission' => 'keycloak.client.view'],
+                            ['type' => 'click', 'label' => 'Edit', 'wire:click' => 'openEdit(\'' . $client['id'] . '\')', 'modal' => 'kc-client-form', 'icon' => 'lucide-pencil', 'permission' => 'keycloak.client.manage'],
                             ['type' => 'click', 'label' => ($client['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $client['id'] . '\', ' . (($client['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($client['enabled'] ?? false) ? 'lucide-power-off' : 'lucide-power', 'permission' => 'keycloak.client.manage'],
                             ['type' => 'click', 'label' => 'Hapus', 'wire:click' => 'deleteClient(\'' . $client['id'] . '\', \'' . ($client['clientId'] ?? '') . '\')', 'icon' => 'lucide-trash-2', 'confirm' => 'Yakin ingin menghapus client ini?', 'permission' => 'keycloak.client.manage'],
                         ]" />
@@ -40,7 +40,7 @@
     </x-nawasara-ui::table>
 
     {{-- Form Modal --}}
-    <x-nawasara-ui::modal wire:model="showForm" :title="$editingId ? 'Edit Client' : 'Tambah Client'">
+    <x-nawasara-ui::modal id="kc-client-form" :title="$editingId ? 'Edit Client' : 'Tambah Client'">
         <form wire:submit="saveClient" id="kc-client-form" class="space-y-4">
             <x-nawasara-ui::form.input label="Client ID" placeholder="my-app" wire:model="formClientId" useError errorVariable="formClientId" :disabled="(bool) $editingId" />
             <x-nawasara-ui::form.input label="Nama (opsional)" placeholder="My Application" wire:model="formName" />
@@ -64,13 +64,13 @@
         </form>
 
         <x-slot:footer>
-            <button type="button" wire:click="$set('showForm', false)" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
+            <button type="button" @click="$dispatch('close-modal', 'kc-client-form')" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
             <x-nawasara-ui::button type="submit" form="kc-client-form" color="primary">Simpan</x-nawasara-ui::button>
         </x-slot:footer>
     </x-nawasara-ui::modal>
 
     {{-- Detail Modal --}}
-    <x-nawasara-ui::modal wire:model="showDetail" maxWidth="2xl" :title="$detailClient['clientId'] ?? ''" :subtitle="$detailClient['name'] ?? null">
+    <x-nawasara-ui::modal id="kc-client-detail" maxWidth="2xl" :title="$detailClient['clientId'] ?? ''" :subtitle="$detailClient['name'] ?? null">
         @if ($detailClient)
             <div class="space-y-5">
                 <div class="grid grid-cols-2 gap-3 text-sm">

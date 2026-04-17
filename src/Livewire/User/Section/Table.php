@@ -14,12 +14,10 @@ class Table extends Component
     public int $perPage = 20;
 
     // Detail modal
-    public bool $showDetail = false;
     public ?array $detailUser = null;
     public array $detailSessions = [];
 
     // Reset password modal
-    public bool $showResetPassword = false;
     public string $resetUserId = '';
     public string $resetUserName = '';
     public string $newPassword = '';
@@ -75,12 +73,12 @@ class Table extends Component
     {
         $this->detailUser = $this->keycloak->getUser($userId);
         $this->detailSessions = $this->keycloak->getUserSessions($userId);
-        $this->showDetail = true;
+        $this->dispatch('modal-open:kc-user-detail');
     }
 
     public function closeDetail()
     {
-        $this->showDetail = false;
+        $this->dispatch('modal-close:kc-user-detail');
         $this->detailUser = null;
         $this->detailSessions = [];
     }
@@ -107,7 +105,7 @@ class Table extends Component
         $this->resetUserName = $username;
         $this->newPassword = '';
         $this->temporary = true;
-        $this->showResetPassword = true;
+        $this->dispatch('modal-open:kc-reset-password');
     }
 
     public function doResetPassword()
@@ -120,7 +118,7 @@ class Table extends Component
 
         $this->keycloak->resetPassword($this->resetUserId, $this->newPassword, $this->temporary);
         toaster_success("Password {$this->resetUserName} berhasil di-reset");
-        $this->showResetPassword = false;
+        $this->dispatch('modal-close:kc-reset-password');
     }
 
     public function logoutUser(string $userId, string $username)

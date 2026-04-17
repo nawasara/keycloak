@@ -30,7 +30,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                         <x-nawasara-ui::dropdown-menu-action :id="$user['id']" :items="[
-                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $user['id'] . '\')', 'icon' => 'lucide-eye', 'permission' => 'keycloak.user.view'],
+                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $user['id'] . '\')', 'modal' => 'kc-user-detail', 'icon' => 'lucide-eye', 'permission' => 'keycloak.user.view'],
                             ['type' => 'click', 'label' => ($user['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $user['id'] . '\', ' . (($user['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($user['enabled'] ?? false) ? 'lucide-user-x' : 'lucide-user-check', 'permission' => 'keycloak.user.manage'],
                             ['type' => 'click', 'label' => 'Reset Password', 'wire:click' => 'openResetPassword(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-key-round', 'permission' => 'keycloak.user.reset_password'],
                             ['type' => 'click', 'label' => 'Logout', 'wire:click' => 'logoutUser(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-log-out', 'confirm' => 'Logout semua session user ini?', 'permission' => 'keycloak.session.revoke'],
@@ -66,7 +66,7 @@
     </x-nawasara-ui::table>
 
     {{-- Detail Modal --}}
-    <x-nawasara-ui::modal wire:model="showDetail" maxWidth="2xl" :title="$detailUser['username'] ?? ''">
+    <x-nawasara-ui::modal id="kc-user-detail" maxWidth="2xl" :title="$detailUser['username'] ?? ''">
         @if ($detailUser)
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4 text-sm">
@@ -104,7 +104,7 @@
     </x-nawasara-ui::modal>
 
     {{-- Reset Password Modal --}}
-    <x-nawasara-ui::modal wire:model="showResetPassword" maxWidth="md" :title="'Reset Password: '.$resetUserName">
+    <x-nawasara-ui::modal id="kc-reset-password" maxWidth="md" :title="'Reset Password: '.$resetUserName">
         <form wire:submit="doResetPassword" id="kc-reset-pw-form" class="space-y-4">
             <x-nawasara-ui::form.input label="Password Baru" type="password"
                 wire:model="newPassword" usePasswordField useError errorVariable="newPassword" />
@@ -112,7 +112,7 @@
         </form>
 
         <x-slot:footer>
-            <button type="button" wire:click="$set('showResetPassword', false)" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
+            <button type="button" @click="$dispatch('close-modal', 'kc-reset-password')" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
             <x-nawasara-ui::button type="submit" form="kc-reset-pw-form" color="primary">Reset Password</x-nawasara-ui::button>
         </x-slot:footer>
     </x-nawasara-ui::modal>

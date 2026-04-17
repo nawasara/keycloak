@@ -13,7 +13,6 @@ class Table extends Component
     public string $search = '';
 
     // Detail modal
-    public bool $showDetail = false;
     public ?array $detailClient = null;
     public array $detailRoles = [];
     public array $detailSessions = [];
@@ -21,7 +20,6 @@ class Table extends Component
     public bool $secretRevealed = false;
 
     // Form modal (create/edit)
-    public bool $showForm = false;
     public ?string $editingId = null;
     public string $formClientId = '';
     public string $formName = '';
@@ -75,7 +73,7 @@ class Table extends Component
         $this->detailSessions = $this->keycloak->getClientSessions($id);
         $this->detailSecret = null;
         $this->secretRevealed = false;
-        $this->showDetail = true;
+        $this->dispatch('modal-open:kc-client-detail');
     }
 
     public function revealSecret()
@@ -101,7 +99,7 @@ class Table extends Component
 
     public function closeDetail()
     {
-        $this->showDetail = false;
+        $this->dispatch('modal-close:kc-client-detail');
         $this->detailClient = null;
         $this->detailRoles = [];
         $this->detailSessions = [];
@@ -117,7 +115,7 @@ class Table extends Component
         Gate::authorize('keycloak.client.manage');
 
         $this->resetForm();
-        $this->showForm = true;
+        $this->dispatch('modal-open:kc-client-form');
     }
 
     public function openEdit(string $id)
@@ -139,7 +137,7 @@ class Table extends Component
         $this->formServiceAccountsEnabled = $client['serviceAccountsEnabled'] ?? false;
         $this->formStandardFlowEnabled = $client['standardFlowEnabled'] ?? true;
         $this->formDirectAccessGrantsEnabled = $client['directAccessGrantsEnabled'] ?? false;
-        $this->showForm = true;
+        $this->dispatch('modal-open:kc-client-form');
     }
 
     public function saveClient()
@@ -177,7 +175,7 @@ class Table extends Component
             toaster_success('Client berhasil dibuat');
         }
 
-        $this->showForm = false;
+        $this->dispatch('modal-close:kc-client-form');
         $this->resetForm();
         unset($this->clients);
     }
