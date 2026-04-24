@@ -4,7 +4,7 @@ $prefix = 'nawasara-keycloak';
 
 return [
     [
-        'label' => 'Keycloak',
+        'label' => 'Keycloak SSO',
         'icon' => 'lucide-key-round',
         'url' => '',
         'permission' => 'keycloak.user.view',
