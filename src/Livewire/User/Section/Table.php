@@ -3,18 +3,25 @@
 namespace Nawasara\Keycloak\Livewire\User\Section;
 
 use Illuminate\Support\Facades\Gate;
-use Livewire\Component;
 use Livewire\Attributes\Computed;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Nawasara\Keycloak\Models\KeycloakUser;
+use Nawasara\Keycloak\Repositories\KeycloakUserRepository;
 use Nawasara\Keycloak\Services\KeycloakClient;
+use Nawasara\Ui\Livewire\Concerns\HasBrowserToast;
 
 class Table extends Component
 {
+    use HasBrowserToast;
+    use WithPagination;
+
     public string $search = '';
-    public int $page = 0;
-    public int $perPage = 20;
+    public string $statusFilter = '';
+    public int $perPage = 25;
 
     // Detail modal
-    public ?array $detailUser = null;
+    public ?int $detailId = null;
     public array $detailSessions = [];
 
     // Reset password modal
@@ -30,104 +37,116 @@ class Table extends Component
         $this->keycloak = $keycloak;
     }
 
+    protected function repo(): KeycloakUserRepository
+    {
+        return new KeycloakUserRepository();
+    }
+
     #[Computed]
     public function users()
     {
-        $params = [
-            'first' => $this->page * $this->perPage,
-            'max' => $this->perPage,
-        ];
-
-        if ($this->search) {
-            $params['search'] = $this->search;
-        }
-
-        return $this->keycloak->getUsers($params);
+        return $this->repo()->list([
+            'search' => $this->search ?: null,
+            'status' => $this->statusFilter ?: null,
+        ], $this->perPage);
     }
 
     #[Computed]
-    public function userCount()
+    public function lastSyncedAt(): ?string
     {
-        $params = $this->search ? ['search' => $this->search] : [];
-        return $this->keycloak->getUserCount($params);
+        $when = $this->repo()->lastSyncedAt();
+        return $when ? $when->diffForHumans() : null;
     }
 
-    public function updatedSearch()
+    #[Computed]
+    public function detail(): ?KeycloakUser
     {
-        $this->page = 0;
+        return $this->detailId ? KeycloakUser::find($this->detailId) : null;
     }
 
-    public function previousPage()
+    public function updatedSearch(): void { $this->resetPage(); }
+    public function updatedStatusFilter(): void { $this->resetPage(); }
+
+    public function refreshUsers(): void
     {
-        $this->page = max(0, $this->page - 1);
-        unset($this->users, $this->userCount);
+        Gate::authorize('keycloak.user.view');
+        $this->repo()->syncNow();
+        $this->toastSuccess('Sync dispatched. Refresh dalam beberapa detik.');
     }
 
-    public function nextPage()
+    public function openDetail(int $id): void
     {
-        $this->page++;
-        unset($this->users, $this->userCount);
-    }
-
-    public function openDetail(string $userId)
-    {
-        $this->detailUser = $this->keycloak->getUser($userId);
-        $this->detailSessions = $this->keycloak->getUserSessions($userId);
+        $this->detailId = $id;
+        $user = KeycloakUser::find($id);
+        // Sessions adalah live data, tidak di-cache di DB
+        $this->detailSessions = $user ? $this->keycloak->getUserSessions($user->user_id) : [];
         $this->dispatch('modal-open:kc-user-detail');
     }
 
-    public function closeDetail()
+    public function closeDetail(): void
     {
         $this->dispatch('modal-close:kc-user-detail');
-        $this->detailUser = null;
+        $this->detailId = null;
         $this->detailSessions = [];
     }
 
-    public function toggleEnabled(string $userId, bool $currentlyEnabled)
+    public function toggleEnabled(int $id): void
     {
         Gate::authorize('keycloak.user.manage');
 
-        if ($currentlyEnabled) {
-            $this->keycloak->disableUser($userId);
-            toaster_success('User berhasil di-disable');
-        } else {
-            $this->keycloak->enableUser($userId);
-            toaster_success('User berhasil di-enable');
+        $user = KeycloakUser::find($id);
+        if (! $user) return;
+
+        try {
+            $this->repo()->update($id, ['enabled' => ! $user->enabled]);
+            $this->toastSuccess($user->enabled ? "User {$user->username} sedang di-disable" : "User {$user->username} sedang di-enable");
+        } catch (\Throwable $e) {
+            $this->toastError($e->getMessage());
         }
-        unset($this->users);
     }
 
-    public function openResetPassword(string $userId, string $username)
+    public function openResetPassword(int $id): void
     {
         Gate::authorize('keycloak.user.reset_password');
 
-        $this->resetUserId = $userId;
-        $this->resetUserName = $username;
+        $user = KeycloakUser::find($id);
+        if (! $user) return;
+
+        $this->resetUserId = (string) $id;
+        $this->resetUserName = $user->username;
         $this->newPassword = '';
         $this->temporary = true;
         $this->dispatch('modal-open:kc-reset-password');
     }
 
-    public function doResetPassword()
+    public function doResetPassword(): void
     {
         Gate::authorize('keycloak.user.reset_password');
 
-        $this->validate([
-            'newPassword' => 'required|min:8',
-        ]);
+        $this->validate(['newPassword' => 'required|min:8']);
 
-        $this->keycloak->resetPassword($this->resetUserId, $this->newPassword, $this->temporary);
-        toaster_success("Password {$this->resetUserName} berhasil di-reset");
-        $this->dispatch('modal-close:kc-reset-password');
+        try {
+            $this->repo()->update((int) $this->resetUserId, [
+                'password' => $this->newPassword,
+                'temporary' => $this->temporary,
+            ]);
+            $this->toastSuccess("Password {$this->resetUserName} sedang di-reset");
+            $this->dispatch('modal-close:kc-reset-password');
+        } catch (\Throwable $e) {
+            $this->toastError($e->getMessage());
+        }
     }
 
-    public function logoutUser(string $userId, string $username)
+    public function logoutUser(int $id): void
     {
         Gate::authorize('keycloak.session.revoke');
 
-        $this->keycloak->logoutUser($userId);
-        toaster_success("Semua session {$username} berhasil di-logout");
-        unset($this->users);
+        $user = KeycloakUser::find($id);
+        if (! $user) return;
+
+        // Logout session adalah action live (tidak ada queue job, low risk)
+        $this->keycloak->logoutUser($user->user_id);
+        $this->toastSuccess("Semua session {$user->username} berhasil di-logout");
     }
 
     public function render()

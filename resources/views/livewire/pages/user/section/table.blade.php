@@ -1,81 +1,110 @@
 <div>
-    <x-nawasara-ui::filter-bar searchPlaceholder="Cari username, email, nama..." searchModel="search" />
+    {{-- Sync info bar --}}
+    <div class="mb-3 flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400">
+        <div class="flex items-center gap-3">
+            @if ($this->lastSyncedAt)
+                <span><x-lucide-clock class="size-3 inline" /> Last sync: {{ $this->lastSyncedAt }}</span>
+            @else
+                <span class="text-yellow-600">Belum pernah di-sync. Klik "Sync Sekarang".</span>
+            @endif
+        </div>
+        <a href="{{ url('admin/sync/jobs') }}" wire:navigate class="text-blue-600 hover:underline">
+            Lihat Sync Jobs →
+        </a>
+    </div>
 
-    <x-nawasara-ui::table :headers="['Username', 'Email', 'Nama', 'Status', 'Dibuat', '']" title="Keycloak Users ({{ $this->userCount }} total)">
+    <x-nawasara-ui::filter-bar searchPlaceholder="Cari username, email, nama..." searchModel="search">
+        <x-nawasara-ui::filter-dropdown label="Status" model="statusFilter"
+            :items="['all' => 'Semua Status', 'enabled' => 'Enabled', 'disabled' => 'Disabled']" />
+
+        <x-slot:actions>
+            <x-nawasara-ui::button color="neutral" variant="outline" size="sm" wire:click="refreshUsers">
+                <x-slot:icon>
+                    <x-lucide-refresh-cw wire:loading.class="animate-spin" wire:target="refreshUsers" />
+                </x-slot:icon>
+                Sync Sekarang
+            </x-nawasara-ui::button>
+        </x-slot:actions>
+
+        <x-slot:chips>
+            @if ($statusFilter)
+                <x-nawasara-ui::filter-chip label="Status: {{ ucfirst($statusFilter) }}" model="statusFilter" />
+            @endif
+            @if ($search)
+                <x-nawasara-ui::filter-chip label="Cari: {{ $search }}" model="search" />
+            @endif
+        </x-slot:chips>
+    </x-nawasara-ui::filter-bar>
+
+    <x-nawasara-ui::table
+        :headers="['Username', 'Email', 'Nama', 'Status', 'Sync', 'Dibuat', '']"
+        :title="'Keycloak Users ('.$this->users->total().' total)'">
         <x-slot:table>
             @forelse ($this->users as $user)
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-neutral-200">
-                        {{ $user['username'] ?? '-' }}
+                        {{ $user->username }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-neutral-400">
-                        {{ $user['email'] ?? '-' }}
+                        {{ $user->email ?? '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">
-                        {{ ($user['firstName'] ?? '').' '.($user['lastName'] ?? '') }}
+                        {{ $user->full_name ?: '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        @if ($user['enabled'] ?? false)
+                        @if ($user->enabled)
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">Enabled</span>
                         @else
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">Disabled</span>
                         @endif
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <x-nawasara-sync::sync-badge :status="$user->sync_status" :error="$user->sync_error" />
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-neutral-400">
-                        @if (isset($user['createdTimestamp']))
-                            {{ \Carbon\Carbon::createFromTimestampMs($user['createdTimestamp'])->format('d M Y') }}
-                        @else
-                            -
-                        @endif
+                        {{ $user->kc_created_at?->format('d M Y') ?? '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                        <x-nawasara-ui::dropdown-menu-action :id="$user['id']" :items="[
-                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail(\'' . $user['id'] . '\')', 'modal' => 'kc-user-detail', 'icon' => 'lucide-eye', 'permission' => 'keycloak.user.view'],
-                            ['type' => 'click', 'label' => ($user['enabled'] ?? false) ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled(\'' . $user['id'] . '\', ' . (($user['enabled'] ?? false) ? 'true' : 'false') . ')', 'icon' => ($user['enabled'] ?? false) ? 'lucide-user-x' : 'lucide-user-check', 'permission' => 'keycloak.user.manage'],
-                            ['type' => 'click', 'label' => 'Reset Password', 'wire:click' => 'openResetPassword(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-key-round', 'permission' => 'keycloak.user.reset_password'],
-                            ['type' => 'click', 'label' => 'Logout', 'wire:click' => 'logoutUser(\'' . $user['id'] . '\', \'' . $user['username'] . '\')', 'icon' => 'lucide-log-out', 'confirm' => 'Logout semua session user ini?', 'permission' => 'keycloak.session.revoke'],
+                        <x-nawasara-ui::dropdown-menu-action :id="$user->id" :items="[
+                            ['type' => 'click', 'label' => 'Detail', 'wire:click' => 'openDetail('.$user->id.')', 'modal' => 'kc-user-detail', 'icon' => 'lucide-eye', 'permission' => 'keycloak.user.view'],
+                            ['type' => 'click', 'label' => $user->enabled ? 'Disable' : 'Enable', 'wire:click' => 'toggleEnabled('.$user->id.')', 'icon' => $user->enabled ? 'lucide-user-x' : 'lucide-user-check', 'permission' => 'keycloak.user.manage'],
+                            ['type' => 'click', 'label' => 'Reset Password', 'wire:click' => 'openResetPassword('.$user->id.')', 'modal' => 'kc-reset-password', 'icon' => 'lucide-key-round', 'permission' => 'keycloak.user.reset_password'],
+                            ['type' => 'click', 'label' => 'Logout', 'wire:click' => 'logoutUser('.$user->id.')', 'icon' => 'lucide-log-out', 'confirm' => 'Logout semua session user ini?', 'permission' => 'keycloak.session.revoke'],
                         ]" />
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-neutral-400">
-                        Tidak ada user ditemukan.
+                    <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-neutral-400">
+                        @if ($this->lastSyncedAt === null)
+                            Database masih kosong. Klik <strong>Sync Sekarang</strong>.
+                        @else
+                            Tidak ada user ditemukan.
+                        @endif
                     </td>
                 </tr>
             @endforelse
         </x-slot:table>
 
         <x-slot:footer>
-            <div class="flex items-center justify-between px-4 py-3">
-                <div class="text-sm text-gray-500">
-                    Halaman {{ $page + 1 }} dari {{ max(1, ceil($this->userCount / $perPage)) }}
-                </div>
-                <div class="flex gap-2">
-                    <button wire:click="previousPage" @disabled($page === 0)
-                        class="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:border-neutral-700 dark:hover:bg-neutral-700">
-                        Prev
-                    </button>
-                    <button wire:click="nextPage" @disabled(($page + 1) * $perPage >= $this->userCount)
-                        class="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:border-neutral-700 dark:hover:bg-neutral-700">
-                        Next
-                    </button>
-                </div>
-            </div>
+            {{ $this->users->links() }}
         </x-slot:footer>
     </x-nawasara-ui::table>
 
     {{-- Detail Modal --}}
-    <x-nawasara-ui::modal id="kc-user-detail" maxWidth="2xl" :title="$detailUser['username'] ?? ''">
-        @if ($detailUser)
+    <x-nawasara-ui::modal id="kc-user-detail" maxWidth="2xl" :title="$this->detail?->username ?? ''">
+        @if ($this->detail)
+            @php $u = $this->detail; @endphp
             <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div><span class="text-gray-500">Username:</span> <span class="font-medium">{{ $detailUser['username'] }}</span></div>
-                    <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $detailUser['email'] ?? '-' }}</span></div>
-                    <div><span class="text-gray-500">Nama:</span> <span class="font-medium">{{ ($detailUser['firstName'] ?? '').' '.($detailUser['lastName'] ?? '') }}</span></div>
-                    <div><span class="text-gray-500">Status:</span> <span class="font-medium {{ ($detailUser['enabled'] ?? false) ? 'text-green-600' : 'text-red-600' }}">{{ ($detailUser['enabled'] ?? false) ? 'Enabled' : 'Disabled' }}</span></div>
-                    <div><span class="text-gray-500">Email Verified:</span> <span class="font-medium">{{ ($detailUser['emailVerified'] ?? false) ? 'Ya' : 'Tidak' }}</span></div>
-                    <div><span class="text-gray-500">Dibuat:</span> <span class="font-medium">{{ isset($detailUser['createdTimestamp']) ? \Carbon\Carbon::createFromTimestampMs($detailUser['createdTimestamp'])->format('d M Y H:i') : '-' }}</span></div>
+                    <div><span class="text-gray-500">Username:</span> <span class="font-medium">{{ $u->username }}</span></div>
+                    <div><span class="text-gray-500">Email:</span> <span class="font-medium">{{ $u->email ?? '-' }}</span></div>
+                    <div><span class="text-gray-500">Nama:</span> <span class="font-medium">{{ $u->full_name ?: '-' }}</span></div>
+                    <div><span class="text-gray-500">Status:</span> <span class="font-medium {{ $u->enabled ? 'text-green-600' : 'text-red-600' }}">{{ $u->enabled ? 'Enabled' : 'Disabled' }}</span></div>
+                    <div><span class="text-gray-500">Email Verified:</span> <span class="font-medium">{{ $u->email_verified ? 'Ya' : 'Tidak' }}</span></div>
+                    <div><span class="text-gray-500">2FA (TOTP):</span> <span class="font-medium">{{ $u->totp ? 'Aktif' : 'Tidak' }}</span></div>
+                    <div><span class="text-gray-500">Dibuat:</span> <span class="font-medium">{{ $u->kc_created_at?->format('d M Y H:i') ?? '-' }}</span></div>
+                    <div><span class="text-gray-500">Last Synced:</span> <span class="font-medium">{{ $u->last_synced_at?->diffForHumans() ?? '-' }}</span></div>
                 </div>
 
                 @if (!empty($detailSessions))
@@ -98,7 +127,7 @@
                 @endif
             </div>
             <x-slot:footer>
-                <button wire:click="closeDetail" class="py-2 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Tutup</button>
+                <x-nawasara-ui::button color="neutral" variant="outline" wire:click="closeDetail">Tutup</x-nawasara-ui::button>
             </x-slot:footer>
         @endif
     </x-nawasara-ui::modal>
@@ -112,7 +141,7 @@
         </form>
 
         <x-slot:footer>
-            <button type="button" @click="$dispatch('close-modal', 'kc-reset-password')" class="py-2.5 px-4 text-sm font-medium rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">Batal</button>
+            <x-nawasara-ui::button color="neutral" variant="outline" @click="$dispatch('close-modal', 'kc-reset-password')">Batal</x-nawasara-ui::button>
             <x-nawasara-ui::button type="submit" form="kc-reset-pw-form" color="primary">Reset Password</x-nawasara-ui::button>
         </x-slot:footer>
     </x-nawasara-ui::modal>

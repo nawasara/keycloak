@@ -3,24 +3,32 @@
 namespace Nawasara\Keycloak\Livewire\Client\Section;
 
 use Illuminate\Support\Facades\Gate;
-use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Nawasara\Keycloak\Models\KeycloakClient as KcClientModel;
+use Nawasara\Keycloak\Repositories\KeycloakClientRepository;
 use Nawasara\Keycloak\Services\KeycloakClient;
+use Nawasara\Ui\Livewire\Concerns\HasBrowserToast;
 
 class Table extends Component
 {
+    use HasBrowserToast;
+    use WithPagination;
+
     public string $search = '';
+    public int $perPage = 25;
 
     // Detail modal
-    public ?array $detailClient = null;
+    public ?int $detailId = null;
     public array $detailRoles = [];
     public array $detailSessions = [];
     public ?string $detailSecret = null;
     public bool $secretRevealed = false;
 
-    // Form modal (create/edit)
-    public ?string $editingId = null;
+    // Form modal
+    public ?int $editingId = null;
     public string $formClientId = '';
     public string $formName = '';
     public string $formRootUrl = '';
@@ -40,67 +48,82 @@ class Table extends Component
         $this->keycloak = $keycloak;
     }
 
+    protected function repo(): KeycloakClientRepository
+    {
+        return new KeycloakClientRepository();
+    }
+
+    public function updatedSearch(): void { $this->resetPage(); }
+
     #[Computed]
     public function clients()
     {
-        $clients = $this->keycloak->getClients();
+        return $this->repo()->list([
+            'search' => $this->search ?: null,
+        ], $this->perPage);
+    }
 
-        $clients = array_filter($clients, function ($client) {
-            $internals = ['account', 'admin-cli', 'broker', 'realm-management', 'security-admin-console'];
-            if (in_array($client['clientId'] ?? '', $internals)) {
-                return false;
-            }
+    #[Computed]
+    public function lastSyncedAt(): ?string
+    {
+        $when = $this->repo()->lastSyncedAt();
+        return $when ? $when->diffForHumans() : null;
+    }
 
-            if ($this->search) {
-                $searchLower = strtolower($this->search);
-                $clientId = strtolower($client['clientId'] ?? '');
-                $name = strtolower($client['name'] ?? '');
-                return str_contains($clientId, $searchLower) || str_contains($name, $searchLower);
-            }
+    #[Computed]
+    public function detail(): ?KcClientModel
+    {
+        return $this->detailId ? KcClientModel::find($this->detailId) : null;
+    }
 
-            return true;
-        });
-
-        return array_values($clients);
+    public function refreshClients(): void
+    {
+        Gate::authorize('keycloak.client.view');
+        $this->repo()->syncNow();
+        $this->toastSuccess('Sync dispatched. Refresh dalam beberapa detik.');
     }
 
     // ─── Detail ─────────────────────────────────────────
 
-    public function openDetail(string $id)
+    public function openDetail(int $id): void
     {
-        $this->detailClient = $this->keycloak->getClient($id);
-        $this->detailRoles = $this->keycloak->getClientRoles($id);
-        $this->detailSessions = $this->keycloak->getClientSessions($id);
+        $client = KcClientModel::find($id);
+        if (! $client) return;
+
+        $this->detailId = $id;
+        // Roles & sessions are live data
+        $this->detailRoles = $this->keycloak->getClientRoles($client->client_uuid);
+        $this->detailSessions = $this->keycloak->getClientSessions($client->client_uuid);
         $this->detailSecret = null;
         $this->secretRevealed = false;
         $this->dispatch('modal-open:kc-client-detail');
     }
 
-    public function revealSecret()
+    public function revealSecret(): void
     {
         Gate::authorize('keycloak.client.reveal_secret');
 
-        if ($this->detailClient) {
-            $this->detailSecret = $this->keycloak->getClientSecret($this->detailClient['id']);
+        if ($this->detail) {
+            $this->detailSecret = $this->keycloak->getClientSecret($this->detail->client_uuid);
             $this->secretRevealed = true;
         }
     }
 
-    public function regenerateSecret()
+    public function regenerateSecret(): void
     {
         Gate::authorize('keycloak.client.manage');
 
-        if ($this->detailClient) {
-            $this->detailSecret = $this->keycloak->regenerateClientSecret($this->detailClient['id']);
+        if ($this->detail) {
+            $this->detailSecret = $this->keycloak->regenerateClientSecret($this->detail->client_uuid);
             $this->secretRevealed = true;
-            toaster_success('Client secret berhasil di-regenerate');
+            $this->toastSuccess('Client secret berhasil di-regenerate');
         }
     }
 
-    public function closeDetail()
+    public function closeDetail(): void
     {
         $this->dispatch('modal-close:kc-client-detail');
-        $this->detailClient = null;
+        $this->detailId = null;
         $this->detailRoles = [];
         $this->detailSessions = [];
         $this->detailSecret = null;
@@ -110,37 +133,36 @@ class Table extends Component
     // ─── Create / Edit ──────────────────────────────────
 
     #[On('openCreateClient')]
-    public function openCreate()
+    public function openCreate(): void
     {
         Gate::authorize('keycloak.client.manage');
-
         $this->resetForm();
         $this->dispatch('modal-open:kc-client-form');
     }
 
-    public function openEdit(string $id)
+    public function openEdit(int $id): void
     {
         Gate::authorize('keycloak.client.manage');
 
-        $client = $this->keycloak->getClient($id);
+        $client = KcClientModel::find($id);
         if (! $client) return;
 
         $this->editingId = $id;
-        $this->formClientId = $client['clientId'] ?? '';
-        $this->formName = $client['name'] ?? '';
-        $this->formRootUrl = $client['rootUrl'] ?? '';
-        $this->formRedirectUris = implode("\n", $client['redirectUris'] ?? []);
-        $this->formWebOrigins = implode("\n", $client['webOrigins'] ?? []);
-        $this->formProtocol = $client['protocol'] ?? 'openid-connect';
-        $this->formPublicClient = $client['publicClient'] ?? false;
-        $this->formEnabled = $client['enabled'] ?? true;
-        $this->formServiceAccountsEnabled = $client['serviceAccountsEnabled'] ?? false;
-        $this->formStandardFlowEnabled = $client['standardFlowEnabled'] ?? true;
-        $this->formDirectAccessGrantsEnabled = $client['directAccessGrantsEnabled'] ?? false;
+        $this->formClientId = $client->client_id;
+        $this->formName = $client->name ?? '';
+        $this->formRootUrl = $client->root_url ?? '';
+        $this->formRedirectUris = implode("\n", $client->redirect_uris ?? []);
+        $this->formWebOrigins = implode("\n", $client->web_origins ?? []);
+        $this->formProtocol = $client->protocol ?? 'openid-connect';
+        $this->formPublicClient = $client->public_client;
+        $this->formEnabled = $client->enabled;
+        $this->formServiceAccountsEnabled = $client->service_accounts_enabled;
+        $this->formStandardFlowEnabled = $client->standard_flow_enabled;
+        $this->formDirectAccessGrantsEnabled = $client->direct_access_grants_enabled;
         $this->dispatch('modal-open:kc-client-form');
     }
 
-    public function saveClient()
+    public function saveClient(): void
     {
         Gate::authorize('keycloak.client.manage');
 
@@ -167,20 +189,22 @@ class Table extends Component
             'directAccessGrantsEnabled' => $this->formDirectAccessGrantsEnabled,
         ];
 
-        if ($this->editingId) {
-            $this->keycloak->updateClient($this->editingId, $payload);
-            toaster_success('Client berhasil diperbarui');
-        } else {
-            $this->keycloak->createClient($payload);
-            toaster_success('Client berhasil dibuat');
+        try {
+            if ($this->editingId) {
+                $this->repo()->update($this->editingId, $payload);
+                $this->toastSuccess('Client sedang di-update');
+            } else {
+                $this->repo()->create($payload);
+                $this->toastSuccess('Client sedang dibuat');
+            }
+            $this->dispatch('modal-close:kc-client-form');
+            $this->resetForm();
+        } catch (\Throwable $e) {
+            $this->toastError($e->getMessage());
         }
-
-        $this->dispatch('modal-close:kc-client-form');
-        $this->resetForm();
-        unset($this->clients);
     }
 
-    private function resetForm()
+    private function resetForm(): void
     {
         $this->editingId = null;
         $this->formClientId = '';
@@ -198,27 +222,31 @@ class Table extends Component
 
     // ─── Actions ────────────────────────────────────────
 
-    public function toggleEnabled(string $id, bool $currentlyEnabled)
+    public function toggleEnabled(int $id): void
     {
         Gate::authorize('keycloak.client.manage');
 
-        if ($currentlyEnabled) {
-            $this->keycloak->disableClient($id);
-            toaster_success('Client berhasil di-disable');
-        } else {
-            $this->keycloak->enableClient($id);
-            toaster_success('Client berhasil di-enable');
+        $client = KcClientModel::find($id);
+        if (! $client) return;
+
+        try {
+            $this->repo()->update($id, ['enabled' => ! $client->enabled]);
+            $this->toastSuccess($client->enabled ? "Client {$client->client_id} sedang di-disable" : "Client {$client->client_id} sedang di-enable");
+        } catch (\Throwable $e) {
+            $this->toastError($e->getMessage());
         }
-        unset($this->clients);
     }
 
-    public function deleteClient(string $id, string $clientId)
+    public function deleteClient(int $id): void
     {
         Gate::authorize('keycloak.client.manage');
 
-        $this->keycloak->deleteClient($id);
-        toaster_success("Client {$clientId} berhasil dihapus");
-        unset($this->clients);
+        try {
+            $this->repo()->delete($id);
+            $this->toastSuccess('Client delete dispatched');
+        } catch (\Throwable $e) {
+            $this->toastError($e->getMessage());
+        }
     }
 
     public function render()
