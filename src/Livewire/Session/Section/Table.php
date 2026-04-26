@@ -6,9 +6,12 @@ use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Nawasara\Keycloak\Services\KeycloakClient;
+use Nawasara\Ui\Livewire\Concerns\HasBrowserToast;
 
 class Table extends Component
 {
+    use HasBrowserToast;
+
     public string $search = '';
 
     protected KeycloakClient $keycloak;
@@ -37,7 +40,7 @@ class Table extends Component
         Gate::authorize('keycloak.session.revoke');
 
         $this->keycloak->deleteSession($sessionId);
-        toaster_success('Session berhasil di-revoke');
+        $this->toastSuccess('Session berhasil di-revoke');
         unset($this->stats, $this->activeSessions);
     }
 
