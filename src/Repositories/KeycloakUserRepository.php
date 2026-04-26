@@ -10,11 +10,14 @@ use Nawasara\Keycloak\Jobs\User\ResetKeycloakPasswordJob;
 use Nawasara\Keycloak\Jobs\User\SyncKeycloakUsersJob;
 use Nawasara\Keycloak\Jobs\User\ToggleKeycloakUserJob;
 use Nawasara\Keycloak\Models\KeycloakUser;
+use Nawasara\Sync\Concerns\TracksLastSync;
 use Nawasara\Sync\Contracts\SyncedRepository;
 use Nawasara\Sync\Models\SyncJob;
 
 class KeycloakUserRepository implements SyncedRepository
 {
+    use TracksLastSync;
+
     public function list(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return $this->query($filters)->orderBy('username')->paginate($perPage);
@@ -90,11 +93,7 @@ class KeycloakUserRepository implements SyncedRepository
 
     public function lastSyncedAt(): ?Carbon
     {
-        $latest = KeycloakUser::whereNotNull('last_synced_at')
-            ->orderByDesc('last_synced_at')
-            ->value('last_synced_at');
-
-        return $latest ? Carbon::parse($latest) : null;
+        return $this->lastSuccessfulSyncAt('keycloak', 'sync_users');
     }
 
     protected function query(array $filters = [])
