@@ -63,6 +63,39 @@ class KeycloakClient
             && Vault::has('keycloak', 'client_secret');
     }
 
+    /**
+     * Dipanggil dari Vault credential list — tombol "Test Connection".
+     * Coba grab admin token (client_credentials flow). Sukses = realm
+     * reachable + client_id/secret valid + service account ke-grant
+     * proper roles untuk admin API.
+     */
+    public function testConnection(): array
+    {
+        if (! $this->isConfigured()) {
+            return ['success' => false, 'message' => 'Field Keycloak belum lengkap di Vault.'];
+        }
+
+        try {
+            // Bypass cache supaya test selalu hit beneran ke Keycloak.
+            Cache::forget('keycloak_admin_token');
+            $token = $this->getToken();
+            if (! $token) {
+                return ['success' => false, 'message' => 'Token kosong dari Keycloak.'];
+            }
+
+            // Token didapat → coba call admin endpoint sederhana
+            $response = $this->api()->get($this->adminUrl('/users/count'));
+            if (! $response->successful()) {
+                return ['success' => false, 'message' => 'Token valid tapi admin API ditolak: '.($response->json('error_description') ?? $response->body())];
+            }
+
+            $count = (int) $response->body();
+            return ['success' => true, 'message' => "Connect ke Keycloak berhasil. Realm punya {$count} user."];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
     // ─── Users ──────────────────────────────────────────
 
     public function getUsers(array $params = []): array
