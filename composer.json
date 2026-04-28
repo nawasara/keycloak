@@ -1,8 +1,28 @@
 {
     "name": "nawasara/keycloak",
-    "description": "Keycloak admin dashboard for Nawasara — user management, sessions, events",
+    "description": "Keycloak SSO admin dashboard for Nawasara — manage users and clients with DB-cached snapshots and queue-backed mutations.",
     "type": "library",
     "license": "MIT",
+    "keywords": [
+        "nawasara",
+        "laravel",
+        "keycloak",
+        "sso",
+        "iam",
+        "oidc",
+        "user-management"
+    ],
+    "authors": [
+        {
+            "name": "Pringgo J. Saputro",
+            "email": "odyinggo@gmail.com",
+            "role": "Lead Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/nawasara/keycloak/issues",
+        "source": "https://github.com/nawasara/keycloak"
+    },
     "autoload": {
         "psr-4": {
             "Nawasara\\Keycloak\\": "src/"
@@ -13,6 +33,7 @@
         "illuminate/support": "^10.0|^12.0",
         "spatie/laravel-permission": "^6.0",
         "nawasara/ui": "*",
+        "nawasara/sync": "*",
         "nawasara/vault": "*",
         "livewire/livewire": "^3.0"
     },
@@ -22,5 +43,7 @@
                 "Nawasara\\Keycloak\\KeycloakServiceProvider"
             ]
         }
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
