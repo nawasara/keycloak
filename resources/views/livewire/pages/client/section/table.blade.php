@@ -152,18 +152,27 @@
                         @if ($secretRevealed && $detailSecret)
                             <div class="flex items-center gap-2">
                                 <code class="flex-1 text-sm bg-gray-50 dark:bg-neutral-700/50 px-3 py-2 rounded font-mono break-all text-gray-800 dark:text-neutral-200">{{ $detailSecret }}</code>
-                                <button wire:click="$set('secretRevealed', false)" class="text-gray-400 hover:text-gray-600 dark:hover:text-neutral-300"><x-lucide-eye-off class="size-4" /></button>
+                                <x-nawasara-ui::button variant="ghost" color="neutral" size="sm"
+                                    wire:click="$set('secretRevealed', false)">
+                                    <x-slot:icon><x-lucide-eye-off /></x-slot:icon>
+                                </x-nawasara-ui::button>
                             </div>
                             @can('keycloak.client.manage')
-                                <button wire:click="regenerateSecret" wire:confirm="Regenerate secret? Client lama akan berhenti bekerja." class="mt-2 inline-flex items-center gap-1.5 text-xs text-orange-600 dark:text-orange-400 hover:underline">
-                                    <x-lucide-refresh-cw class="size-3" /> Regenerate
-                                </button>
+                                <x-nawasara-ui::button variant="link" color="warning" size="sm"
+                                    wire:click="regenerateSecret"
+                                    wire:confirm="Regenerate secret? Client lama akan berhenti bekerja."
+                                    class="mt-2 text-xs">
+                                    <x-slot:icon><x-lucide-refresh-cw /></x-slot:icon>
+                                    Regenerate
+                                </x-nawasara-ui::button>
                             @endcan
                         @else
                             @can('keycloak.client.reveal_secret')
-                                <button wire:click="revealSecret" class="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                                    <x-lucide-eye class="size-4" /> Tampilkan Secret
-                                </button>
+                                <x-nawasara-ui::button variant="link" color="primary" size="sm"
+                                    wire:click="revealSecret">
+                                    <x-slot:icon><x-lucide-eye /></x-slot:icon>
+                                    Tampilkan Secret
+                                </x-nawasara-ui::button>
                             @else
                                 <p class="text-xs text-gray-400 italic">Tidak punya permission untuk melihat secret</p>
                             @endcan

@@ -75,10 +75,14 @@
             <div class="flex items-center justify-between px-4 py-3">
                 <div class="text-sm text-gray-500">Halaman {{ $page + 1 }}</div>
                 <div class="flex gap-2">
-                    <button wire:click="previousPage" @disabled($page === 0)
-                        class="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:border-neutral-700">Prev</button>
-                    <button wire:click="nextPage" @disabled(count($this->events) < $perPage)
-                        class="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:border-neutral-700">Next</button>
+                    <x-nawasara-ui::button color="neutral" variant="outline" size="sm"
+                        wire:click="previousPage" :disabled="$page === 0">
+                        Prev
+                    </x-nawasara-ui::button>
+                    <x-nawasara-ui::button color="neutral" variant="outline" size="sm"
+                        wire:click="nextPage" :disabled="count($this->events) < $perPage">
+                        Next
+                    </x-nawasara-ui::button>
                 </div>
             </div>
         </x-slot:footer>
