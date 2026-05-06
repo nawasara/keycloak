@@ -5,10 +5,10 @@
             @if ($this->lastSyncedAt)
                 <span><x-lucide-clock class="size-3 inline" /> Last sync: {{ $this->lastSyncedAt }}</span>
             @else
-                <span class="text-yellow-600">Belum pernah di-sync. Klik "Sync Sekarang".</span>
+                <span class="text-amber-700 dark:text-amber-400">Belum pernah di-sync. Klik "Sync Sekarang".</span>
             @endif
         </div>
-        <a href="{{ url('admin/sync/jobs') }}" wire:navigate class="text-blue-600 hover:underline">
+        <a href="{{ url('admin/sync/jobs') }}" wire:navigate class="text-emerald-700 dark:text-emerald-400 hover:underline font-medium">
             Lihat Sync Jobs →
         </a>
     </div>
@@ -54,7 +54,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @if ($client->public_client)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Public</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">Public</span>
                         @else
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-neutral-700 dark:text-neutral-400">Confidential</span>
                         @endif

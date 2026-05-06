@@ -96,6 +96,34 @@ class KeycloakUserRepository implements SyncedRepository
         return $this->lastSuccessfulSyncAt('keycloak', 'sync_users');
     }
 
+    /**
+     * Aggregate stats untuk hero stats row di Users page.
+     *
+     * Single-pass query (selectRaw) supaya tidak perlu 4 round-trip ke DB.
+     * Caller tetap bisa wrap di Cache kalau page di-poll heavy — tapi default
+     * page user keycloak tidak di-poll, cuma sync manual, jadi cache ringan
+     * di Livewire #[Computed] sudah cukup.
+     *
+     * Return shape:
+     *   ['total' => int, 'enabled' => int, 'disabled' => int, 'totp' => int]
+     */
+    public function stats(): array
+    {
+        $row = KeycloakUser::query()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN enabled = 1 THEN 1 ELSE 0 END) as enabled_count')
+            ->selectRaw('SUM(CASE WHEN enabled = 0 THEN 1 ELSE 0 END) as disabled_count')
+            ->selectRaw('SUM(CASE WHEN totp = 1 AND enabled = 1 THEN 1 ELSE 0 END) as totp_count')
+            ->first();
+
+        return [
+            'total' => (int) ($row?->total ?? 0),
+            'enabled' => (int) ($row?->enabled_count ?? 0),
+            'disabled' => (int) ($row?->disabled_count ?? 0),
+            'totp' => (int) ($row?->totp_count ?? 0),
+        ];
+    }
+
     protected function query(array $filters = [])
     {
         return KeycloakUser::query()

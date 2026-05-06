@@ -106,6 +106,36 @@ class KeycloakClientRepository implements SyncedRepository
         return $this->lastSuccessfulSyncAt('keycloak', 'sync_clients');
     }
 
+    /**
+     * Aggregate stats untuk hero stats row di Clients page.
+     *
+     * Hitung breakdown per tipe client yang relevan untuk admin:
+     * - total: semua client terdaftar
+     * - enabled: client aktif (bisa terima request)
+     * - public: client SPA/native (tanpa client_secret) — penting untuk
+     *   visibility security posture, public client lebih sensitif
+     * - service_account: client dengan service-account-flow (machine-to-machine)
+     *
+     * Return shape:
+     *   ['total' => int, 'enabled' => int, 'public' => int, 'service_account' => int]
+     */
+    public function stats(): array
+    {
+        $row = KeycloakClient::query()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN enabled = 1 THEN 1 ELSE 0 END) as enabled_count')
+            ->selectRaw('SUM(CASE WHEN public_client = 1 THEN 1 ELSE 0 END) as public_count')
+            ->selectRaw('SUM(CASE WHEN service_accounts_enabled = 1 THEN 1 ELSE 0 END) as sa_count')
+            ->first();
+
+        return [
+            'total' => (int) ($row?->total ?? 0),
+            'enabled' => (int) ($row?->enabled_count ?? 0),
+            'public' => (int) ($row?->public_count ?? 0),
+            'service_account' => (int) ($row?->sa_count ?? 0),
+        ];
+    }
+
     protected function query(array $filters = [])
     {
         $q = KeycloakClient::query()
