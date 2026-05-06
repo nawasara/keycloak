@@ -64,8 +64,12 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-neutral-400">
-                        Tidak ada event. Pastikan Event Logging di-enable di Keycloak Realm Settings.
+                    <td colspan="6">
+                        <x-nawasara-ui::empty-state
+                            icon="lucide-scroll-text"
+                            title="Tidak ada event log"
+                            description="Pastikan Event Logging di-enable di Keycloak Realm Settings (Events > Login Events Settings)."
+                            inline />
                     </td>
                 </tr>
             @endforelse

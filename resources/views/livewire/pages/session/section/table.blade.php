@@ -14,8 +14,12 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="2" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-neutral-400">
-                        Tidak ada session aktif saat ini.
+                    <td colspan="2">
+                        <x-nawasara-ui::empty-state
+                            icon="lucide-monitor-dot"
+                            title="Tidak ada session aktif"
+                            description="Tidak ada user yang sedang login ke aplikasi yang ter-integrate Keycloak."
+                            inline />
                     </td>
                 </tr>
             @endforelse

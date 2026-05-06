@@ -75,11 +75,29 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-neutral-400">
+                    <td colspan="7">
                         @if ($this->lastSyncedAt === null)
-                            Database masih kosong. Klik <strong>Sync Sekarang</strong>.
+                            {{-- Belum pernah sync — DB benar-benar kosong --}}
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-users"
+                                title="Database user masih kosong"
+                                description="Klik tombol Sync Sekarang di atas untuk fetch user dari Keycloak."
+                                inline />
+                        @elseif ($search !== '' || $statusFilter !== '')
+                            {{-- Sync sudah pernah, tapi filter habiskan results --}}
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-search-x"
+                                title="Tidak ada user yang cocok"
+                                description="Coba ubah filter atau hapus search keyword."
+                                variant="filter"
+                                inline />
                         @else
-                            Tidak ada user ditemukan.
+                            {{-- Sync sukses tapi DB memang tidak ada user --}}
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-users"
+                                title="Belum ada user terdaftar"
+                                description="Tambah user di Keycloak admin console, lalu sync ulang."
+                                inline />
                         @endif
                     </td>
                 </tr>

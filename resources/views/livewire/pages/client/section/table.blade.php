@@ -73,11 +73,26 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-neutral-400">
+                    <td colspan="7">
                         @if ($this->lastSyncedAt === null)
-                            Database masih kosong. Klik <strong>Sync Sekarang</strong>.
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-app-window"
+                                title="Database client masih kosong"
+                                description="Klik tombol Sync Sekarang untuk fetch client dari Keycloak."
+                                inline />
+                        @elseif ($search !== '')
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-search-x"
+                                title="Tidak ada client yang cocok"
+                                description="Coba ubah search keyword."
+                                variant="filter"
+                                inline />
                         @else
-                            Tidak ada client ditemukan.
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-app-window"
+                                title="Belum ada client terdaftar"
+                                description="Buat OIDC/SAML client di Keycloak admin console, lalu sync ulang."
+                                inline />
                         @endif
                     </td>
                 </tr>
