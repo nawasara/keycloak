@@ -1,17 +1,5 @@
 <div>
-    {{-- Sync info bar --}}
-    <div class="mb-3 flex items-center justify-between text-xs text-gray-500 dark:text-neutral-400">
-        <div class="flex items-center gap-3">
-            @if ($this->lastSyncedAt)
-                <span><x-lucide-clock class="size-3 inline" /> Last sync: {{ $this->lastSyncedAt }}</span>
-            @else
-                <span class="text-amber-700 dark:text-amber-400">Belum pernah di-sync. Klik "Sync Sekarang".</span>
-            @endif
-        </div>
-        <a href="{{ url('admin/sync/jobs') }}" wire:navigate class="text-emerald-700 dark:text-emerald-400 hover:underline font-medium">
-            Lihat Sync Jobs →
-        </a>
-    </div>
+    <x-nawasara-ui::sync-info-bar :lastSyncedAt="$this->lastSyncedAt" />
 
     @php
         $statusOptions = ['enabled' => 'Enabled', 'disabled' => 'Disabled'];
@@ -34,24 +22,10 @@
                 </x-nawasara-ui::filter-panel>
             </div>
 
-            <div class="relative w-full md:flex-1 md:min-w-0">
-                <div class="absolute inset-y-0 start-0 flex items-center pointer-events-none ps-3.5">
-                    <x-lucide-search class="shrink-0 size-4 text-gray-400 dark:text-neutral-500" />
-                </div>
-                <input type="text" wire:model.live.debounce.300ms="search"
-                    placeholder="Cari username, email, atau nama..."
-                    class="h-10 ps-10 pe-4 block w-full border border-gray-200 rounded-lg text-sm focus:border-emerald-600 focus:ring-emerald-600 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" />
-            </div>
+            <x-nawasara-ui::search-input model="search" placeholder="Cari username, email, atau nama..." />
 
             <div class="flex items-center gap-2 shrink-0">
-                <x-nawasara-ui::tooltip text="Sync ulang dari Keycloak" placement="bottom">
-                    <button type="button" wire:click="refreshUsers"
-                        wire:loading.attr="disabled" wire:target="refreshUsers"
-                        aria-label="Sync Sekarang"
-                        class="inline-flex items-center justify-center size-10 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-700 shadow-sm transition-colors disabled:opacity-50 disabled:pointer-events-none">
-                        <x-lucide-refresh-cw class="size-4" wire:loading.class="animate-spin" wire:target="refreshUsers" />
-                    </button>
-                </x-nawasara-ui::tooltip>
+                <x-nawasara-ui::icon-button icon="refresh-cw" tooltip="Sync ulang dari Keycloak" wire:click="refreshUsers" loadingTarget="refreshUsers" />
 
                 <x-nawasara-ui::export-button
                     action="export"
