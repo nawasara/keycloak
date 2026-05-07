@@ -57,11 +57,31 @@ class KeycloakUser extends Model
         });
     }
 
-    public function scopeStatus($query, ?string $status)
+    /**
+     * Polymorphic enabled/disabled filter. Accepts string for single match
+     * ('enabled' / 'disabled') or array for multi-select. The boolean
+     * `enabled` column underlies the semantic value; selecting BOTH
+     * 'enabled' and 'disabled' produces no constraint (every row matches).
+     *
+     * @param  string|array<int,string>|null  $status
+     */
+    public function scopeStatus($query, string|array|null $status)
     {
-        if (! $status) return $query;
-        if ($status === 'enabled') return $query->where('enabled', true);
-        if ($status === 'disabled') return $query->where('enabled', false);
+        if (empty($status)) {
+            return $query;
+        }
+
+        $values = is_array($status) ? $status : [$status];
+        $wantEnabled = in_array('enabled', $values, true);
+        $wantDisabled = in_array('disabled', $values, true);
+
+        if ($wantEnabled && ! $wantDisabled) {
+            return $query->where('enabled', true);
+        }
+        if ($wantDisabled && ! $wantEnabled) {
+            return $query->where('enabled', false);
+        }
+        // Both selected, neither matched the dictionary, etc → no-op.
         return $query;
     }
 }

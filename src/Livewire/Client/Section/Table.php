@@ -11,10 +11,12 @@ use Nawasara\Keycloak\Models\KeycloakClient as KcClientModel;
 use Nawasara\Keycloak\Repositories\KeycloakClientRepository;
 use Nawasara\Keycloak\Services\KeycloakClient;
 use Nawasara\Ui\Livewire\Concerns\HasBrowserToast;
+use Nawasara\Ui\Livewire\Concerns\HasExport;
 
 class Table extends Component
 {
     use HasBrowserToast;
+    use HasExport;
     use WithPagination;
 
     public string $search = '';
@@ -247,6 +249,40 @@ class Table extends Component
         } catch (\Throwable $e) {
             $this->toastError($e->getMessage());
         }
+    }
+
+    /**
+     * Export filename base — timestamp + extension appended by HasExport.
+     */
+    protected function exportFilename(): string
+    {
+        return 'keycloak-clients';
+    }
+
+    /**
+     * Export FULL Keycloak client list (no filter) per spec. Includes
+     * core OAuth flags and the redirect/origin allow-lists so an audit
+     * reviewer can spot mis-configured clients without re-querying.
+     */
+    protected function exportData(): iterable
+    {
+        return KcClientModel::query()
+            ->orderBy('client_id')
+            ->get()
+            ->map(fn (KcClientModel $c) => [
+                'Client ID' => $c->client_id,
+                'Name' => $c->name,
+                'Protocol' => $c->protocol,
+                'Public Client' => $c->public_client ? 'Yes' : 'No',
+                'Enabled' => $c->enabled ? 'Yes' : 'No',
+                'Standard Flow' => $c->standard_flow_enabled ? 'Yes' : 'No',
+                'Direct Access' => $c->direct_access_grants_enabled ? 'Yes' : 'No',
+                'Service Accounts' => $c->service_accounts_enabled ? 'Yes' : 'No',
+                'Root URL' => $c->root_url,
+                'Redirect URIs' => is_array($c->redirect_uris) ? implode(', ', $c->redirect_uris) : (string) $c->redirect_uris,
+                'Web Origins' => is_array($c->web_origins) ? implode(', ', $c->web_origins) : (string) $c->web_origins,
+                'Last Synced' => optional($c->last_synced_at)->format('Y-m-d H:i'),
+            ]);
     }
 
     public function render()

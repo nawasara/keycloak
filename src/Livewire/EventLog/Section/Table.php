@@ -5,9 +5,12 @@ namespace Nawasara\Keycloak\Livewire\EventLog\Section;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
 use Nawasara\Keycloak\Services\KeycloakClient;
+use Nawasara\Ui\Livewire\Concerns\HasTimeWindow;
 
 class Table extends Component
 {
+    use HasTimeWindow;
+
     public string $typeFilter = '';
     public int $page = 0;
     public int $perPage = 25;
@@ -17,6 +20,18 @@ class Table extends Component
     public function boot(KeycloakClient $keycloak)
     {
         $this->keycloak = $keycloak;
+    }
+
+    /**
+     * Page reset is manual here - this component pre-dates WithPagination
+     * (events come from a live Keycloak API call, not a DB query). The
+     * trait's onTimeWindowChanged() expects resetPage(); we override so
+     * window changes also rewind to first page.
+     */
+    protected function onTimeWindowChanged(): void
+    {
+        $this->page = 0;
+        unset($this->events);
     }
 
     #[Computed]
@@ -29,6 +44,18 @@ class Table extends Component
 
         if ($this->typeFilter) {
             $params['type'] = $this->typeFilter;
+        }
+
+        // Keycloak admin API supports `dateFrom` / `dateTo` (Y-m-d) params,
+        // so we resolve the trait's preset/custom window to bounds and
+        // forward them. resolveTimeWindow returns Carbon instances; null
+        // means "no constraint" (custom mode with empty endpoints).
+        [$from, $to] = $this->resolveTimeWindow();
+        if ($from) {
+            $params['dateFrom'] = $from->toDateString();
+        }
+        if ($to) {
+            $params['dateTo'] = $to->toDateString();
         }
 
         return $this->keycloak->getEvents($params);

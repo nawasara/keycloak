@@ -13,24 +13,45 @@
         </a>
     </div>
 
-    <x-nawasara-ui::filter-bar searchPlaceholder="Cari client ID, nama..." searchModel="search">
-        <x-slot:actions>
-            <x-nawasara-ui::button color="neutral" variant="outline" size="sm" wire:click="refreshClients">
-                <x-slot:icon>
-                    <x-lucide-refresh-cw wire:loading.class="animate-spin" wire:target="refreshClients" />
-                </x-slot:icon>
-                Sync Sekarang
-            </x-nawasara-ui::button>
-        </x-slot:actions>
+    {{-- Toolbar — search + sync button + export. No filter dimensions
+         (search-only UI). --}}
+    <div class="space-y-2 mb-4">
+        <div class="flex flex-col md:flex-row md:flex-nowrap md:items-center gap-2">
+            <div class="relative w-full md:flex-1 md:min-w-0">
+                <div class="absolute inset-y-0 start-0 flex items-center pointer-events-none ps-3.5">
+                    <x-lucide-search class="shrink-0 size-4 text-gray-400 dark:text-neutral-500" />
+                </div>
+                <input type="text" wire:model.live.debounce.300ms="search"
+                    placeholder="Cari client ID atau nama..."
+                    class="h-10 ps-10 pe-4 block w-full border border-gray-200 rounded-lg text-sm focus:border-emerald-600 focus:ring-emerald-600 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-200 dark:placeholder-neutral-500 dark:focus:ring-neutral-600" />
+            </div>
 
-        <x-slot:chips>
-            @if ($search)
+            <div class="flex items-center gap-2 shrink-0">
+                <x-nawasara-ui::tooltip text="Sync ulang dari Keycloak" placement="bottom">
+                    <button type="button" wire:click="refreshClients"
+                        wire:loading.attr="disabled" wire:target="refreshClients"
+                        aria-label="Sync Sekarang"
+                        class="inline-flex items-center justify-center size-10 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-700 shadow-sm transition-colors disabled:opacity-50 disabled:pointer-events-none">
+                        <x-lucide-refresh-cw class="size-4" wire:loading.class="animate-spin" wire:target="refreshClients" />
+                    </button>
+                </x-nawasara-ui::tooltip>
+
+                <x-nawasara-ui::export-button
+                    action="export"
+                    tooltip="Ekspor client list"
+                    permission="keycloak.client.view" />
+            </div>
+        </div>
+
+        @if ($search)
+            <div class="flex flex-wrap items-center gap-2">
                 <x-nawasara-ui::filter-chip label="Cari: {{ $search }}" model="search" />
-            @endif
-        </x-slot:chips>
-    </x-nawasara-ui::filter-bar>
+            </div>
+        @endif
+    </div>
 
     <x-nawasara-ui::table
+        stickyLast
         :headers="['Client ID', 'Nama', 'Protocol', 'Status', 'Tipe', 'Sync', '']"
         :title="'Client Apps ('.$this->clients->total().' total)'">
         <x-slot:table>

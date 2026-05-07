@@ -1,24 +1,44 @@
 <div>
-    <x-nawasara-ui::filter-bar>
-        <x-nawasara-ui::filter-dropdown label="Event Type" model="typeFilter"
-            :items="[
-                'all' => 'Semua',
-                'LOGIN' => 'Login',
-                'LOGIN_ERROR' => 'Login Error',
-                'LOGOUT' => 'Logout',
-                'REGISTER' => 'Register',
-                'CODE_TO_TOKEN' => 'Code to Token',
-                'CODE_TO_TOKEN_ERROR' => 'Token Error',
-            ]" />
+    @php
+        $typeOptions = [
+            'LOGIN' => 'Login',
+            'LOGIN_ERROR' => 'Login Error',
+            'LOGOUT' => 'Logout',
+            'REGISTER' => 'Register',
+            'CODE_TO_TOKEN' => 'Code to Token',
+            'CODE_TO_TOKEN_ERROR' => 'Token Error',
+        ];
+    @endphp
 
-        <x-slot:chips>
-            @if ($typeFilter)
-                <x-nawasara-ui::filter-chip label="Type: {{ $typeFilter }}" model="typeFilter" />
-            @endif
-        </x-slot:chips>
-    </x-nawasara-ui::filter-bar>
+    {{-- Page header — title left, time-window right. Events are sourced
+         live from Keycloak admin API; the trait's resolveTimeWindow()
+         translates the active preset into dateFrom/dateTo params. --}}
+    <x-nawasara-ui::page-header
+        title="Keycloak Event Log"
+        description="Login, logout, register events dari Keycloak Realm. Pastikan Event Logging di-enable di Realm Settings.">
+        <x-nawasara-ui::time-window :window="$window" :from="$from" :to="$to" />
+    </x-nawasara-ui::page-header>
 
-    <x-nawasara-ui::table :headers="['Type', 'User', 'IP Address', 'Client', 'Detail', 'Waktu']" title="Login Events">
+    {{-- Toolbar — Event Type filter (single-select; the Keycloak API
+         takes one type per call). --}}
+    <div class="space-y-2 mb-4">
+        <div class="flex flex-col md:flex-row md:flex-nowrap md:items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <x-nawasara-ui::filter-panel
+                    label="Filter"
+                    :state="['typeFilter' => $typeFilter]"
+                    :labels="['typeFilter' => $typeOptions]"
+                    :dimensions="['typeFilter' => 'Type']">
+                    <x-nawasara-ui::filter-group label="Event Type" model="typeFilter" :items="$typeOptions" icon="lucide-zap" />
+                </x-nawasara-ui::filter-panel>
+            </div>
+        </div>
+
+        <div wire:ignore data-filter-chips></div>
+    </div>
+
+    {{-- No stickyLast: event log is read-only, no per-row action column. --}}
+    <x-nawasara-ui::table :headers="['Type', 'User', 'IP Address', 'Client', 'Detail', 'Waktu']">
         <x-slot:table>
             @forelse ($this->events as $event)
                 <tr>
@@ -65,11 +85,20 @@
             @empty
                 <tr>
                     <td colspan="6">
-                        <x-nawasara-ui::empty-state
-                            icon="lucide-scroll-text"
-                            title="Tidak ada event log"
-                            description="Pastikan Event Logging di-enable di Keycloak Realm Settings (Events > Login Events Settings)."
-                            inline />
+                        @if ($typeFilter || $window !== '7d' || $from || $to)
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-search-x"
+                                title="Tidak ada event yang cocok"
+                                description="Coba ubah periode/filter type."
+                                variant="filter"
+                                inline />
+                        @else
+                            <x-nawasara-ui::empty-state
+                                icon="lucide-scroll-text"
+                                title="Tidak ada event 7 hari terakhir"
+                                description="Pilih periode lebih panjang, atau pastikan Event Logging di-enable di Keycloak Realm Settings (Events > Login Events Settings)."
+                                inline />
+                        @endif
                     </td>
                 </tr>
             @endforelse
