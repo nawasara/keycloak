@@ -68,16 +68,16 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @if ($client->enabled)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">Enabled</span>
+                            <x-nawasara-ui::badge color="success">Enabled</x-nawasara-ui::badge>
                         @else
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">Disabled</span>
+                            <x-nawasara-ui::badge color="danger">Disabled</x-nawasara-ui::badge>
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @if ($client->public_client)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">Public</span>
+                            <x-nawasara-ui::badge color="info">Public</x-nawasara-ui::badge>
                         @else
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-neutral-700 dark:text-neutral-400">Confidential</span>
+                            <x-nawasara-ui::badge color="neutral">Confidential</x-nawasara-ui::badge>
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -221,7 +221,7 @@
                         <h4 class="font-semibold text-gray-700 dark:text-neutral-300 mb-2">Client Roles</h4>
                         <div class="flex flex-wrap gap-1.5">
                             @foreach ($detailRoles as $role)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">{{ $role['name'] }}</span>
+                                <x-nawasara-ui::badge color="purple">{{ $role['name'] }}</x-nawasara-ui::badge>
                             @endforeach
                         </div>
                     </div>

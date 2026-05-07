@@ -7,9 +7,9 @@
                         {{ $stat['clientId'] ?? $stat['id'] ?? '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($stat['active'] ?? 0) > 0 ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600' }}">
+                        <x-nawasara-ui::badge :color="($stat['active'] ?? 0) > 0 ? 'success' : 'neutral'">
                             {{ $stat['active'] ?? 0 }} sessions
-                        </span>
+                        </x-nawasara-ui::badge>
                     </td>
                 </tr>
             @empty

@@ -44,16 +44,17 @@
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @php
-                            $isError = str_contains($event['type'] ?? '', 'ERROR');
-                            $badgeClass = $isError
-                                ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                                : (($event['type'] ?? '') === 'LOGOUT'
-                                    ? 'bg-gray-100 text-gray-600 dark:bg-neutral-700 dark:text-neutral-400'
-                                    : 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400');
+                            // Map Keycloak event types to badge color tokens.
+                            // ERROR-suffixed events → danger; LOGOUT → neutral
+                            // (informational, no action); everything else
+                            // (LOGIN / REGISTER / CODE_TO_TOKEN) → success.
+                            $eventColor = str_contains($event['type'] ?? '', 'ERROR')
+                                ? 'danger'
+                                : (($event['type'] ?? '') === 'LOGOUT' ? 'neutral' : 'success');
                         @endphp
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badgeClass }}">
+                        <x-nawasara-ui::badge :color="$eventColor">
                             {{ $event['type'] ?? '-' }}
-                        </span>
+                        </x-nawasara-ui::badge>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">
                         {{ $event['userId'] ?? '-' }}

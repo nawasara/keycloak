@@ -87,9 +87,9 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @if ($user->enabled)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400">Enabled</span>
+                            <x-nawasara-ui::badge color="success">Enabled</x-nawasara-ui::badge>
                         @else
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400">Disabled</span>
+                            <x-nawasara-ui::badge color="danger">Disabled</x-nawasara-ui::badge>
                         @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
