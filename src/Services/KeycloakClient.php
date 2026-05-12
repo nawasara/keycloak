@@ -143,6 +143,79 @@ class KeycloakClient
         ])->successful();
     }
 
+    /**
+     * Find a Keycloak user by exact username match.
+     *
+     * Returns the user representation array (with `id`, `attributes`, etc.)
+     * or null if no exact match. Note: Keycloak's `/users` endpoint with
+     * `username=foo` does a substring-or-exact lookup; we add `exact=true`
+     * and then verify the username equals ours, because some Keycloak
+     * versions still return partial matches even with the flag.
+     */
+    public function findUserByUsername(string $username): ?array
+    {
+        $users = $this->getUsers([
+            'username' => $username,
+            'exact' => 'true',
+            'max' => 5,
+        ]);
+
+        foreach ($users as $u) {
+            if (($u['username'] ?? null) === $username) {
+                return $u;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Update arbitrary fields on a Keycloak user via PUT /users/{id}.
+     *
+     * Keycloak's update endpoint is full-replace on top-level fields, so
+     * callers must pass through the full user representation. For attribute
+     * merges (the common case), use {@see setUserAttribute()} which fetches
+     * the existing user first, merges, then PUTs.
+     */
+    public function updateUser(string $id, array $data): bool
+    {
+        return $this->api()->put($this->adminUrl("/users/{$id}"), $data)->successful();
+    }
+
+    /**
+     * Merge a single attribute into a user's `attributes` map.
+     *
+     * Keycloak stores user attributes as `attributes: {key: [value]}` — each
+     * value is an array (multi-valued). This helper keeps the existing
+     * attributes intact, sets/overrides just the named key, and PUTs the
+     * full payload back. Pass null as value to remove the attribute.
+     *
+     * Examples:
+     *   $client->setUserAttribute($id, 'kominfo_email', 'pringgo@kominfo.go.id');
+     *   $client->setUserAttribute($id, 'kominfo_email', null); // remove
+     *
+     * Returns false if the user doesn't exist or the PUT failed.
+     */
+    public function setUserAttribute(string $id, string $key, ?string $value): bool
+    {
+        $user = $this->getUser($id);
+        if (! $user) {
+            return false;
+        }
+
+        $attributes = $user['attributes'] ?? [];
+
+        if ($value === null) {
+            unset($attributes[$key]);
+        } else {
+            // Keycloak expects array values for attributes (multi-valued
+            // semantics). Single-string values are wrapped in a one-item array.
+            $attributes[$key] = [$value];
+        }
+
+        return $this->updateUser($id, ['attributes' => $attributes]);
+    }
+
     public function getUserGroups(string $id): array
     {
         $response = $this->api()->get($this->adminUrl("/users/{$id}/groups"));
