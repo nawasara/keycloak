@@ -8,6 +8,8 @@ use Symfony\Component\Finder\Finder;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 use Nawasara\Keycloak\Console\Commands\SyncCommand;
+use Nawasara\Keycloak\Jobs\Client\SyncKeycloakClientsJob;
+use Nawasara\Keycloak\Jobs\User\SyncKeycloakUsersJob;
 use Nawasara\Keycloak\Services\KeycloakClient;
 
 class KeycloakServiceProvider extends ServiceProvider
@@ -42,10 +44,21 @@ class KeycloakServiceProvider extends ServiceProvider
             // Sync users + clients tiap jam. User/client list relatif stabil;
             // sync user bisa lama (pagination, job timeout 600s) — hourly
             // cukup tanpa membebani Keycloak admin API.
-            $schedule->command('keycloak:sync')
+            //
+            // Dispatch job langsung lewat $schedule->call() — TIDAK lewat
+            // $schedule->command('keycloak:sync'). Console command yang
+            // didaftarkan via $this->commands() tidak selalu surface di
+            // Artisan kernel (paket yang boot belakangan), jadi
+            // $schedule->command() bisa gagal "namespace not defined".
+            // $schedule->call() jalan di proses scheduler sendiri — tidak
+            // butuh command terdaftar.
+            $schedule->call(function () {
+                SyncKeycloakUsersJob::dispatch(triggerSource: 'scheduled');
+                SyncKeycloakClientsJob::dispatch(triggerSource: 'scheduled');
+            })
+                ->name('nawasara-keycloak:sync')
                 ->hourly()
-                ->withoutOverlapping(30)
-                ->runInBackground();
+                ->withoutOverlapping(30);
         });
     }
 
