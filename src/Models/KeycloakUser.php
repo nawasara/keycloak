@@ -32,7 +32,45 @@ class KeycloakUser extends Model
 
     public function getFullNameAttribute(): string
     {
+        // Prefer the Keycloak `fullName` custom attribute (which carries the
+        // proper titled name, e.g. "Dr. TRI BUDHI SUSILOWATI M.Pd"), falling
+        // back to first+last.
+        $attr = $this->attributeValue('fullName');
+        if ($attr !== null && $attr !== '') {
+            return $attr;
+        }
         return trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
+    }
+
+    /** NIP from the Keycloak `nip` custom attribute. */
+    public function getNipAttribute(): ?string
+    {
+        return $this->attributeValue('nip');
+    }
+
+    /** WhatsApp/phone from the Keycloak `whatsapp_number` custom attribute. */
+    public function getWhatsappAttribute(): ?string
+    {
+        return $this->attributeValue('whatsapp_number');
+    }
+
+    /**
+     * Read a single value from the Keycloak `attributes` blob. Keycloak stores
+     * every attribute as an array (multi-valued), so we return the first entry.
+     * Uses getAttribute() (not $this->attributes, which is Eloquent's internal
+     * property) so the array cast on the `attributes` column is honoured.
+     */
+    public function attributeValue(string $key): ?string
+    {
+        $decoded = $this->getAttribute('attributes');
+        if (! is_array($decoded)) {
+            return null;
+        }
+        $val = $decoded[$key] ?? null;
+        if (is_array($val)) {
+            $val = $val[0] ?? null;
+        }
+        return ($val === null || $val === '') ? null : (string) $val;
     }
 
     public function computeContentHash(): string
