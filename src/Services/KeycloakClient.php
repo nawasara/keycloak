@@ -6,6 +6,19 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Nawasara\Vault\Facades\Vault;
 
+/**
+ * Client Keycloak Admin REST API.
+ *
+ * Catatan soal penyusunan URL: `base_url` dan `realm` datang dari Vault, diisi
+ * manusia, jadi trailing slash pasti muncul cepat atau lambat. Sejak Keycloak 25
+ * server MENOLAK path yang tidak ternormalisasi — `https://host//realms/...`
+ * dijawab `{"error":"missingNormalization"}` alih-alih dirapikan sendiri seperti
+ * dulu. Gejalanya menyesatkan: pesannya muncul sebagai kegagalan mengambil admin
+ * token, seolah kredensialnya salah, padahal kredensialnya benar.
+ *
+ * Karena itu kedua nilai dirapikan sekali di credentials(), bukan di tiap
+ * pemanggil. Jangan hapus rtrim/trim itu tanpa memindahkannya ke tempat lain.
+ */
 class KeycloakClient
 {
     protected ?string $baseUrl = null;
@@ -14,8 +27,11 @@ class KeycloakClient
     protected function credentials(): array
     {
         return [
-            'base_url' => $this->baseUrl ??= Vault::get('keycloak', 'base_url'),
-            'realm' => $this->realm ??= Vault::get('keycloak', 'realm'),
+            // base_url dan realm dirapikan di sini, sekali, supaya setiap
+            // penyusun URL di bawah tidak perlu mengulang kehati-hatian yang
+            // sama. Lihat catatan di normalize().
+            'base_url' => $this->baseUrl ??= rtrim((string) Vault::get('keycloak', 'base_url'), '/'),
+            'realm' => $this->realm ??= trim((string) Vault::get('keycloak', 'realm'), '/'),
             'client_id' => Vault::get('keycloak', 'client_id'),
             'client_secret' => Vault::get('keycloak', 'client_secret'),
         ];
