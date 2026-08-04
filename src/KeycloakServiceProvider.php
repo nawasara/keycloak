@@ -28,6 +28,12 @@ class KeycloakServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->registerLivewire();
 
+        // Scope didaftarkan SEBELUM routes: UI token memfilter scope yang tidak
+        // ter-register, jadi scope yang belum terdaftar tidak bisa di-assign
+        // ke token sama sekali.
+        $this->registerApiScopes();
+        $this->registerApiRoutes();
+
         $this->app->booted(function () {
             if (! $this->app->runningInConsole()) {
                 return;
@@ -67,6 +73,49 @@ class KeycloakServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/nawasara-keycloak.php', 'nawasara-keycloak');
 
         $this->app->singleton(KeycloakClient::class, fn () => new KeycloakClient());
+    }
+
+    /**
+     * Daftarkan scope API ke registry terpusat `nawasara/api`.
+     *
+     * Guard class_exists, bukan dependency composer — package ini tetap jalan
+     * penuh tanpa nawasara/api terpasang; API-nya saja yang absen. Ini pola
+     * yang sama dipakai cctv/secscan/wifi.
+     */
+    public function registerApiScopes(): void
+    {
+        if (! class_exists(\Nawasara\Api\Support\ScopeRegistry::class)) {
+            return;
+        }
+
+        $registry = $this->app->make(\Nawasara\Api\Support\ScopeRegistry::class);
+
+        $registry->register(
+            'keycloak.user.read',
+            'Direktori pegawai: cari + detail (username, nama, NIP, email, status aktif). '
+            .'Untuk aplikasi lain yang perlu mengisi data pegawai otomatis. '
+            .'Nomor WhatsApp, sesi, dan status 2FA tidak termasuk.',
+        );
+    }
+
+    /**
+     * Mount routes/api.php di prefix /api/v1/keycloak.
+     *
+     * Pakai Route::prefix()->group(), bukan loadRoutesFrom() — supaya prefix,
+     * middleware group, dan name prefix bisa diterapkan sekaligus.
+     */
+    public function registerApiRoutes(): void
+    {
+        if (! class_exists(\Nawasara\Api\ApiServiceProvider::class)) {
+            return;
+        }
+
+        $prefix = (string) config('nawasara-api.route.prefix', 'api/v1').'/keycloak';
+
+        \Illuminate\Support\Facades\Route::prefix($prefix)
+            ->middleware(['api', 'api.auth', 'api.log'])
+            ->name('nawasara-api.keycloak.')
+            ->group(__DIR__.'/../routes/api.php');
     }
 
     public function registerLivewire(): void
