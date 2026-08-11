@@ -24,6 +24,36 @@ class KeycloakClient
     protected ?string $baseUrl = null;
     protected ?string $realm = null;
 
+    /**
+     * Salinan client yang menunjuk realm lain.
+     *
+     * Mengembalikan clone, BUKAN mengubah $this. Kelas ini didaftarkan sebagai
+     * singleton (lihat KeycloakServiceProvider::register), jadi mutasi akan
+     * bocor ke setiap pemanggil lain dalam request yang sama — halaman User
+     * pegawai bisa diam-diam menampilkan warga, tanpa error apa pun.
+     *
+     * Tanpa forRealm(), perilaku kelas ini persis seperti sebelumnya: realm
+     * tetap dibaca dari Vault.
+     *
+     *   $warga = app(KeycloakClient::class)->forRealm('ponorogo-citizen');
+     *   $warga->getUsers();                       // realm warga
+     *   app(KeycloakClient::class)->getUsers();   // tetap realm pegawai
+     *
+     * Catatan: credentials() memoise lewat `??=`, jadi menyetel $clone->realm
+     * di sini membuat pembacaan Vault untuk realm dilewati — memang itu yang
+     * diinginkan. baseUrl ikut ter-clone apa adanya.
+     */
+    public function forRealm(string $realm): static
+    {
+        $clone = clone $this;
+        // Normalisasi sama dengan credentials() — lihat catatan kelas soal
+        // missingNormalization. Realm dari pemanggil sama tidak tepercayanya
+        // dengan realm dari Vault.
+        $clone->realm = trim($realm, '/');
+
+        return $clone;
+    }
+
     protected function credentials(): array
     {
         return [
@@ -37,9 +67,24 @@ class KeycloakClient
         ];
     }
 
+    /**
+     * Cache key admin token — WAJIB memuat realm.
+     *
+     * Tanpa realm di key, token realm A dipakai untuk memanggil admin API
+     * realm B. Tokennya sah (tanda tangan benar, belum kedaluwarsa), hanya
+     * audience-nya salah — jadi gagalnya muncul sebagai 401/403 yang tampak
+     * seperti client_secret keliru, dan waktu habis memeriksa kredensial yang
+     * sebenarnya tidak bermasalah. Pola menyesatkan yang sama dengan
+     * missingNormalization di catatan kelas.
+     */
+    protected function tokenCacheKey(): string
+    {
+        return 'keycloak_admin_token:'.$this->credentials()['realm'];
+    }
+
     protected function getToken(): string
     {
-        return Cache::remember('keycloak_admin_token', config('nawasara-keycloak.token_ttl', 55), function () {
+        return Cache::remember($this->tokenCacheKey(), config('nawasara-keycloak.token_ttl', 55), function () {
             $creds = $this->credentials();
 
             $response = Http::asForm()->post(
@@ -93,7 +138,8 @@ class KeycloakClient
 
         try {
             // Bypass cache supaya test selalu hit beneran ke Keycloak.
-            Cache::forget('keycloak_admin_token');
+            // Key-nya per-realm — jangan buang cache realm lain yang tidak diuji.
+            Cache::forget($this->tokenCacheKey());
             $token = $this->getToken();
             if (! $token) {
                 return ['success' => false, 'message' => 'Token kosong dari Keycloak.'];
