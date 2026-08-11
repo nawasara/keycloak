@@ -24,26 +24,35 @@ class KeycloakClient
     protected ?string $baseUrl = null;
     protected ?string $realm = null;
 
+    /** Group Vault tempat kredensial dibaca. Dipindah bersama realm — lihat forRealm(). */
+    protected string $vaultGroup = 'keycloak';
+
     /**
-     * Salinan client yang menunjuk realm lain.
+     * Salinan client yang menunjuk realm lain, beserta kredensialnya.
      *
      * Mengembalikan clone, BUKAN mengubah $this. Kelas ini didaftarkan sebagai
      * singleton (lihat KeycloakServiceProvider::register), jadi mutasi akan
      * bocor ke setiap pemanggil lain dalam request yang sama — halaman User
      * pegawai bisa diam-diam menampilkan warga, tanpa error apa pun.
      *
-     * Tanpa forRealm(), perilaku kelas ini persis seperti sebelumnya: realm
-     * tetap dibaca dari Vault.
+     * Realm dan group Vault berpindah BERSAMAAN, dan memang harus begitu:
+     * tiap realm punya client admin sendiri (client_id + secret berbeda), jadi
+     * memindah realm tanpa memindah sumber kredensial hanya menghasilkan token
+     * realm lama yang ditolak realm baru.
      *
-     *   $warga = app(KeycloakClient::class)->forRealm('ponorogo-citizen');
+     * Tanpa forRealm(), perilaku kelas ini persis seperti sebelumnya: realm
+     * dan kredensial dibaca dari group Vault 'keycloak'.
+     *
+     *   $warga = app(KeycloakClient::class)->forRealm('ponorogo-citizen', 'keycloak-warga');
      *   $warga->getUsers();                       // realm warga
      *   app(KeycloakClient::class)->getUsers();   // tetap realm pegawai
      *
      * Catatan: credentials() memoise lewat `??=`, jadi menyetel $clone->realm
      * di sini membuat pembacaan Vault untuk realm dilewati — memang itu yang
-     * diinginkan. baseUrl ikut ter-clone apa adanya.
+     * diinginkan. baseUrl sengaja di-reset agar dibaca ulang dari group baru,
+     * karena realm lain bisa saja berada di server Keycloak yang berbeda.
      */
-    public function forRealm(string $realm): static
+    public function forRealm(string $realm, ?string $vaultGroup = null): static
     {
         $clone = clone $this;
         // Normalisasi sama dengan credentials() — lihat catatan kelas soal
@@ -51,19 +60,26 @@ class KeycloakClient
         // dengan realm dari Vault.
         $clone->realm = trim($realm, '/');
 
+        if ($vaultGroup !== null) {
+            $clone->vaultGroup = $vaultGroup;
+            $clone->baseUrl = null;   // baca ulang dari group yang baru
+        }
+
         return $clone;
     }
 
     protected function credentials(): array
     {
+        $group = $this->vaultGroup;
+
         return [
             // base_url dan realm dirapikan di sini, sekali, supaya setiap
             // penyusun URL di bawah tidak perlu mengulang kehati-hatian yang
             // sama. Lihat catatan di normalize().
-            'base_url' => $this->baseUrl ??= rtrim((string) Vault::get('keycloak', 'base_url'), '/'),
-            'realm' => $this->realm ??= trim((string) Vault::get('keycloak', 'realm'), '/'),
-            'client_id' => Vault::get('keycloak', 'client_id'),
-            'client_secret' => Vault::get('keycloak', 'client_secret'),
+            'base_url' => $this->baseUrl ??= rtrim((string) Vault::get($group, 'base_url'), '/'),
+            'realm' => $this->realm ??= trim((string) Vault::get($group, 'realm'), '/'),
+            'client_id' => Vault::get($group, 'client_id'),
+            'client_secret' => Vault::get($group, 'client_secret'),
         ];
     }
 
@@ -119,9 +135,9 @@ class KeycloakClient
 
     public function isConfigured(): bool
     {
-        return Vault::has('keycloak', 'base_url')
-            && Vault::has('keycloak', 'client_id')
-            && Vault::has('keycloak', 'client_secret');
+        return Vault::has($this->vaultGroup, 'base_url')
+            && Vault::has($this->vaultGroup, 'client_id')
+            && Vault::has($this->vaultGroup, 'client_secret');
     }
 
     /**
@@ -130,6 +146,22 @@ class KeycloakClient
      * reachable + client_id/secret valid + service account ke-grant
      * proper roles untuk admin API.
      */
+    /**
+     * Varian testConnection() untuk group Vault `keycloak-warga`.
+     *
+     * Vault memanggil `Class@method` tanpa argumen, jadi group tidak dapat
+     * dititipkan lewat parameter — perlu entry point sendiri per group.
+     * Tanpa ini, tombol Test Connection pada group warga akan menguji
+     * kredensial realm pegawai dan selalu hijau, seberapa pun salahnya isian.
+     */
+    public function testCitizenConnection(): array
+    {
+        return $this->forRealm(
+            (string) Vault::get('keycloak-warga', 'realm'),
+            'keycloak-warga',
+        )->testConnection();
+    }
+
     public function testConnection(): array
     {
         if (! $this->isConfigured()) {
