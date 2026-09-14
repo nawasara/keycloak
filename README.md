@@ -4,18 +4,18 @@ Keycloak SSO admin dashboard for the Nawasara superapp framework. Manage users a
 
 ## Features
 
-- **Users** — list, search, view detail (sessions, roles, attributes), enable/disable, and reset password
-- **Clients** — list, search, create, edit, and delete client applications; reveal and regenerate client secret on demand
-- **DB-cached + queue pattern** — list pages read from `nawasara_keycloak_users` / `nawasara_keycloak_clients` snapshots; mutations dispatch through queue jobs that update Keycloak and the local snapshot atomically with content-hash conflict detection
-- **Sync info bar** — shows last successful sync time, pending mutations, and a link to the audit log
-- **Test connection** — Vault credential page exposes a one-click test that obtains an admin token and queries `/users/count` to confirm realm reachability and admin-API access
-- **Staff directory API** — read-only endpoints so other applications can look people up instead of asking users to retype their own details
+- **Users**: list, search, view detail (sessions, roles, attributes), enable/disable, and reset password
+- **Clients**: list, search, create, edit, and delete client applications; reveal and regenerate client secret on demand
+- **DB-cached + queue pattern**: list pages read from `nawasara_keycloak_users` / `nawasara_keycloak_clients` snapshots; mutations dispatch through queue jobs that update Keycloak and the local snapshot atomically with content-hash conflict detection
+- **Sync info bar**: shows last successful sync time, pending mutations, and a link to the audit log
+- **Test connection**: the Vault credential page exposes a one-click test that obtains an admin token and queries `/users/count` to confirm realm reachability and admin-API access
+- **Staff directory API**: read-only endpoints so other applications can look people up instead of asking users to retype their own details
 
 ## Staff directory API
 
 Requires [`nawasara/api`](../nawasara-api). When that package is absent the routes are simply not mounted; nothing else in this package changes.
 
-Served from the local `nawasara_keycloak_users` snapshot, not from Keycloak itself — the realm stays out of the request path, so a slow or unreachable auth server cannot take consumers down with it. The snapshot refreshes hourly, so callers needing second-fresh data should query Keycloak directly.
+Served from the local `nawasara_keycloak_users` snapshot, not from Keycloak itself. The realm stays out of the request path, so a slow or unreachable auth server cannot take consumers down with it. The snapshot refreshes hourly, so callers needing second-fresh data should query Keycloak directly.
 
 **Read-only by design.** Enabling, disabling, and password resets stay in the Nawasara UI, where they are audit-logged and sudo-gated.
 
@@ -33,7 +33,7 @@ All paths are prefixed `/api/v1/keycloak`. Authenticate with `Authorization: Bea
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/users` | `q`, `status` (`enabled` default \| `disabled` \| `all`), `per_page` (1–100, default 50) |
+| GET | `/users` | `q`, `status` (`enabled` default \| `disabled` \| `all`), `per_page` (1-100, default 50) |
 | GET | `/users/{id}` | `id` is the Keycloak UUID returned as `id` by the list endpoint |
 | GET | `/users/by-username/{username}` | For callers holding a username (NIP) but no UUID |
 
@@ -68,15 +68,15 @@ Store `id` rather than `username` when linking a person across systems: username
 
 The response is an allow-list, not a filtered dump. Deliberately excluded:
 
-- **`whatsapp_number`** — a personal number; no consumer has needed it, and it cannot be recalled once released
-- **`attributes`** (the raw blob) — a free-form bag whose contents can grow through Keycloak configuration alone; exposing it means exposing whatever gets added later, without anyone deciding to
-- **`required_actions`, `totp`, sessions** — account-security state; leaking it hands over a map of who has yet to enable 2FA
+- **`whatsapp_number`**: a personal number; no consumer has needed it, and it cannot be recalled once released
+- **`attributes`** (the raw blob): a free-form bag whose contents can grow through Keycloak configuration alone; exposing it means exposing whatever gets added later, without anyone deciding to
+- **`required_actions`, `totp`, sessions**: account-security state; leaking it hands over a map of who has yet to enable 2FA
 
 Widening this list is a deliberate decision, not a convenience: edit `KeycloakUserResource` and say why in the same commit.
 
 ### Restrict tokens by IP
 
-Directory data is more sensitive than the camera or WiFi endpoints this API pattern was first built for. Set an **IP allow-list** on any token carrying `keycloak.user.read`, so a leaked token is useless off your network.
+Directory data is more sensitive than the camera or WiFi endpoints this API pattern was first built for. Set an **IP allow-list** on any token carrying `keycloak.user.read` so a leaked token is useless off your network.
 
 ## Installation
 
@@ -107,10 +107,10 @@ The package authenticates to Keycloak via the **client credentials** flow with a
 1. Open Nawasara → `/nawasara-vault`
 2. Select the **Keycloak SSO** group
 3. Fill in:
-   - **Base URL** — e.g. `https://sso.kominfo.go.id`
-   - **Realm** — the realm you grant admin access to (e.g. `master`, `kominfo`)
-   - **Client ID** — from step 2 above
-   - **Client Secret** — from step 4 above
+   - **Base URL**: e.g. `https://sso.kominfo.go.id`
+   - **Realm**: the realm you grant admin access to (e.g. `master`, `kominfo`)
+   - **Client ID**: from step 2 above
+   - **Client Secret**: from step 4 above
 4. Save
 
 Click **Test Connection** in the credential dropdown to verify. A successful test reports the realm's user count.
