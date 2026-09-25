@@ -90,6 +90,46 @@ class KeycloakUserProvisioner
     }
 
     /**
+     * Buat akun untuk orang yang dikenal dari sumber LAIN, bukan dari Keycloak.
+     *
+     * Dipakai saat data kepegawaian datang lebih dulu daripada akunnya, mis.
+     * SIMAS Hebat mengenali seorang pegawai yang belum pernah menyentuh SSO.
+     * `keycloak_id` sengaja dibiarkan kosong: kita memang belum tahu nilainya.
+     *
+     * Ini tidak melahirkan akun ganda. Saat orangnya benar-benar login,
+     * `findLocal()` mencari lewat `keycloak_id` LALU `username`, dan karena
+     * username adalah NIP, baris inilah yang ditemukan dan diadopsi;
+     * `adopt()` kemudian mengisi `keycloak_id`-nya. Yang menjaga hal ini tetap
+     * benar adalah username yang persis sama dengan yang dipakai Keycloak.
+     *
+     * Idempoten: memanggil dua kali untuk NIP yang sama mengembalikan baris
+     * yang sama.
+     */
+    public function fromExternalIdentity(string $username, string $name, ?string $email = null): Authenticatable
+    {
+        return DB::transaction(function () use ($username, $name, $email) {
+            $username = trim($username);
+
+            if ($username === '') {
+                throw new \InvalidArgumentException('Username (NIP) tidak boleh kosong.');
+            }
+
+            $user = $this->findLocal(null, $username, $email);
+
+            if ($user) {
+                return $user;
+            }
+
+            return $this->create(
+                keycloakId: null,
+                name: $name ?: $username,
+                username: $username,
+                email: $email,
+            );
+        });
+    }
+
+    /**
      * Cari user lokal: keycloak_id dulu, lalu username, lalu email.
      * Mengembalikan null kalau orang ini belum pernah jadi user Nawasara.
      */
