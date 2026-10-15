@@ -4,8 +4,11 @@ namespace Nawasara\Keycloak\Livewire\User\Section;
 
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Nawasara\AuthPrimitives\Attributes\RequiresSudo;
+use Nawasara\AuthPrimitives\Traits\WithSudo;
 use Nawasara\Keycloak\Models\KeycloakUser;
 use Nawasara\Keycloak\Repositories\KeycloakUserRepository;
 use Nawasara\Keycloak\Services\KeycloakClient;
@@ -14,6 +17,7 @@ use Nawasara\Ui\Livewire\Concerns\HasExport;
 
 class Table extends Component
 {
+    use WithSudo;
     use HasBrowserToast;
     use HasExport;
     use WithPagination;
@@ -30,12 +34,20 @@ class Table extends Component
 
     public int $perPage = 25;
 
+    // Audit keamanan 15 Oktober 2026: id target hanya ditulis server lewat
+    // openDetail()/openResetPassword(). Dikunci supaya payload wire tidak
+    // dapat mengalihkan reset password ke user lain.
+
     // Detail modal
+    #[Locked]
     public ?int $detailId = null;
+    #[Locked]
     public array $detailSessions = [];
 
     // Reset password modal
+    #[Locked]
     public string $resetUserId = '';
+    #[Locked]
     public string $resetUserName = '';
     public string $newPassword = '';
     public bool $temporary = true;
@@ -87,6 +99,10 @@ class Table extends Component
 
     public function openDetail(int $id): void
     {
+        // Audit keamanan 15 Oktober 2026 (R4): memanggil API Keycloak secara
+        // langsung, jadi izin lihat diperiksa ulang.
+        Gate::authorize('keycloak.user.view');
+
         $this->detailId = $id;
         $user = KeycloakUser::find($id);
         // Sessions adalah live data, tidak di-cache di DB
@@ -116,6 +132,11 @@ class Table extends Component
         }
     }
 
+    // Sudo saat modal DIBUKA, bukan saat disimpan: step-up memakai redirect,
+    // dan sandi yang sudah diketik akan hilang bila diminta di akhir. Mengganti
+    // sandi orang lain sama dengan mengambil alih akunnya (audit keamanan
+    // 15 Oktober 2026, S6).
+    #[RequiresSudo(reason: 'mengganti sandi user Keycloak')]
     public function openResetPassword(int $id): void
     {
         Gate::authorize('keycloak.user.reset_password');
@@ -130,6 +151,7 @@ class Table extends Component
         $this->dispatch('modal-open:kc-reset-password');
     }
 
+    #[RequiresSudo(reason: 'mengganti sandi user Keycloak')]
     public function doResetPassword(): void
     {
         Gate::authorize('keycloak.user.reset_password');
@@ -175,6 +197,10 @@ class Table extends Component
      */
     protected function exportData(): iterable
     {
+        // Audit keamanan 15 Oktober 2026: export() dapat dipanggil langsung
+        // lewat payload wire, jadi izin lihat diperiksa ulang di sini.
+        Gate::authorize('keycloak.user.view');
+
         return KeycloakUser::query()
             ->orderBy('username')
             ->get()

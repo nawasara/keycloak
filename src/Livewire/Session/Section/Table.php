@@ -5,12 +5,15 @@ namespace Nawasara\Keycloak\Livewire\Session\Section;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use Livewire\Attributes\Computed;
+use Nawasara\AuthPrimitives\Attributes\RequiresSudo;
+use Nawasara\AuthPrimitives\Traits\WithSudo;
 use Nawasara\Keycloak\Services\KeycloakClient;
 use Nawasara\Ui\Livewire\Concerns\HasBrowserToast;
 
 class Table extends Component
 {
     use HasBrowserToast;
+    use WithSudo;
 
     public string $search = '';
 
@@ -35,6 +38,8 @@ class Table extends Component
         return $this->stats;
     }
 
+    // Audit keamanan 15 Oktober 2026 (S6): wajib sudo (AGENTS.md §6).
+    #[RequiresSudo(reason: 'mencabut sesi Keycloak')]
     public function deleteSession(string $sessionId)
     {
         Gate::authorize('keycloak.session.revoke');

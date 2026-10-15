@@ -4,9 +4,12 @@ namespace Nawasara\Keycloak\Livewire\Client\Section;
 
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Nawasara\AuthPrimitives\Attributes\RequiresSudo;
+use Nawasara\AuthPrimitives\Traits\WithSudo;
 use Nawasara\Keycloak\Models\KeycloakClient as KcClientModel;
 use Nawasara\Keycloak\Repositories\KeycloakClientRepository;
 use Nawasara\Keycloak\Services\KeycloakClient;
@@ -18,18 +21,29 @@ class Table extends Component
     use HasBrowserToast;
     use HasExport;
     use WithPagination;
+    use WithSudo;
 
     public string $search = '';
     public int $perPage = 25;
 
+    // Audit keamanan 15 Oktober 2026: seluruh state detail dan id edit hanya
+    // ditulis server. Dikunci supaya payload wire tidak dapat mengalihkan
+    // revealSecret()/regenerateSecret()/saveClient() ke client lain.
+
     // Detail modal
+    #[Locked]
     public ?int $detailId = null;
+    #[Locked]
     public array $detailRoles = [];
+    #[Locked]
     public array $detailSessions = [];
+    #[Locked]
     public ?string $detailSecret = null;
+    #[Locked]
     public bool $secretRevealed = false;
 
     // Form modal
+    #[Locked]
     public ?int $editingId = null;
     public string $formClientId = '';
     public string $formName = '';
@@ -89,6 +103,10 @@ class Table extends Component
 
     public function openDetail(int $id): void
     {
+        // Audit keamanan 15 Oktober 2026 (R4): memanggil API Keycloak secara
+        // langsung, jadi izin lihat diperiksa ulang.
+        Gate::authorize('keycloak.client.view');
+
         $client = KcClientModel::find($id);
         if (! $client) return;
 
@@ -101,6 +119,9 @@ class Table extends Component
         $this->dispatch('modal-open:kc-client-detail');
     }
 
+    // Audit keamanan 15 Oktober 2026 (S6): secret client adalah kredensial
+    // aplikasi; membukanya atau menggantinya wajib sudo.
+    #[RequiresSudo(reason: 'membuka client secret Keycloak')]
     public function revealSecret(): void
     {
         Gate::authorize('keycloak.client.reveal_secret');
@@ -111,6 +132,7 @@ class Table extends Component
         }
     }
 
+    #[RequiresSudo(reason: 'mengganti client secret Keycloak')]
     public function regenerateSecret(): void
     {
         Gate::authorize('keycloak.client.manage');
@@ -239,6 +261,8 @@ class Table extends Component
         }
     }
 
+    // Audit keamanan 15 Oktober 2026 (S6): wajib sudo (AGENTS.md §6).
+    #[RequiresSudo(reason: 'menghapus client Keycloak')]
     public function deleteClient(int $id): void
     {
         Gate::authorize('keycloak.client.manage');
@@ -266,6 +290,10 @@ class Table extends Component
      */
     protected function exportData(): iterable
     {
+        // Audit keamanan 15 Oktober 2026: export() dapat dipanggil langsung
+        // lewat payload wire, jadi izin lihat diperiksa ulang di sini.
+        Gate::authorize('keycloak.client.view');
+
         return KcClientModel::query()
             ->orderBy('client_id')
             ->get()
