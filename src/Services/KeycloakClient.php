@@ -340,6 +340,57 @@ class KeycloakClient
         return $response->successful() ? $response->json() : [];
     }
 
+    // ─── Credentials ────────────────────────────────────
+
+    /**
+     * Credential milik satu pengguna: password, otp, webauthn-passwordless
+     * (passkey), recovery-authn-codes, dst.
+     *
+     * Admin API tidak mengirim isi rahasianya (secretData), hanya metadata:
+     * id, type, userLabel, createdDate, credentialData. Meski begitu,
+     * pemanggil yang meneruskannya ke luar WAJIB memakai daftar-izin —
+     * credentialData passkey memuat id kredensial dan AAGUID perangkat.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getUserCredentials(string $userId): array
+    {
+        $response = $this->api()->get($this->adminUrl("/users/{$userId}/credentials"));
+
+        return $response->successful() ? (array) $response->json() : [];
+    }
+
+    public function deleteUserCredential(string $userId, string $credentialId): bool
+    {
+        return $this->api()->delete($this->adminUrl("/users/{$userId}/credentials/{$credentialId}"))->successful();
+    }
+
+    /**
+     * Ganti nama tampilan credential (mis. "iPhone Dyah").
+     *
+     * ⚠️ Endpoint ini menerima badan TEKS POLOS, bukan JSON. Mengirim JSON
+     * membuat tanda kutipnya ikut tersimpan sebagai bagian nama.
+     */
+    public function setCredentialLabel(string $userId, string $credentialId, string $label): bool
+    {
+        return Http::withToken($this->getToken())
+            ->timeout(15)
+            ->withBody($label, 'text/plain')
+            ->put($this->adminUrl("/users/{$userId}/credentials/{$credentialId}/userLabel"))
+            ->successful();
+    }
+
+    /**
+     * Event login satu pengguna (butuh "Save events" menyala di realm).
+     *
+     * @param  array<string, mixed>  $params  mis. ['dateFrom' => '2026-08-01', 'max' => 100]
+     * @return list<array<string, mixed>>
+     */
+    public function getUserEvents(string $userId, array $params = []): array
+    {
+        return $this->getEvents(array_merge($params, ['user' => $userId]));
+    }
+
     public function logoutUser(string $userId): bool
     {
         return $this->api()->post($this->adminUrl("/users/{$userId}/logout"))->successful();

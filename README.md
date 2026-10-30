@@ -102,6 +102,14 @@ The package authenticates to Keycloak via the **client credentials** flow with a
    - `realm-management` → grant `manage-users`, `manage-clients`, `view-users`, `view-clients`, `view-realm`, `view-events` (and any others you need)
 4. Open the **Credentials** tab and copy the client secret.
 
+### User credentials and events (`KeycloakClient`)
+
+`getUserCredentials()`, `deleteUserCredential()`, `setCredentialLabel()` and `getUserEvents()` back the ASN account portal (passkeys, authenticator apps, activity). Notes:
+
+- The admin API returns credential metadata, not secrets, but `credentialData` still holds the passkey's credential id and authenticator model. Callers that pass credentials outward must allow-list fields.
+- `setCredentialLabel()` sends a **plain-text** body. A JSON body would store its quotes as part of the name.
+- `getUserEvents()` returns nothing unless **Save events** is on for the realm.
+
 ## Storing credentials in Vault
 
 1. Open Nawasara → `/nawasara-vault`
