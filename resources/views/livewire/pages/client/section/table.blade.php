@@ -26,26 +26,27 @@
 
     <x-nawasara-ui::table
         stickyLast
-        :headers="['Client ID', 'Nama', 'Protocol', 'Status', 'Tipe', 'Sync', '']"
+        :headers="['Client ID', 'Nama', 'Protocol', 'Tipe', 'Sync', '']"
         :title="'Client Apps ('.$this->clients->total().' total)'">
         <x-slot:table>
             @forelse ($this->clients as $client)
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-neutral-200">
                         {{ $client->client_id }}
+                        {{-- Status di bawah nama, bukan kolom sendiri: terlihat tanpa menggulir ke kanan. --}}
+                        <div class="mt-1">
+                            @if ($client->enabled)
+                                <x-nawasara-ui::badge color="success">Enabled</x-nawasara-ui::badge>
+                            @else
+                                <x-nawasara-ui::badge color="danger">Disabled</x-nawasara-ui::badge>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-neutral-400">
                         {{ $client->name ?? '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-neutral-400">
                         {{ $client->protocol ?? '-' }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        @if ($client->enabled)
-                            <x-nawasara-ui::badge color="success">Enabled</x-nawasara-ui::badge>
-                        @else
-                            <x-nawasara-ui::badge color="danger">Disabled</x-nawasara-ui::badge>
-                        @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         @if ($client->public_client)
@@ -68,7 +69,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7">
+                    <td colspan="6">
                         @if ($this->lastSyncedAt === null)
                             <x-nawasara-ui::empty-state
                                 icon="lucide-app-window"

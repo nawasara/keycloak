@@ -45,26 +45,27 @@
 
     <x-nawasara-ui::table
         stickyLast
-        :headers="['Username', 'Email', 'Nama', 'Status', 'Sync', 'Dibuat', '']"
+        :headers="['Username', 'Email', 'Nama', 'Sync', 'Dibuat', '']"
         :title="'Keycloak Users ('.$this->users->total().' total)'">
         <x-slot:table>
             @forelse ($this->users as $user)
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800 dark:text-neutral-200">
                         {{ $user->username }}
+                        {{-- Status di bawah nama, bukan kolom sendiri: terlihat tanpa menggulir ke kanan. --}}
+                        <div class="mt-1">
+                            @if ($user->enabled)
+                                <x-nawasara-ui::badge color="success">Enabled</x-nawasara-ui::badge>
+                            @else
+                                <x-nawasara-ui::badge color="danger">Disabled</x-nawasara-ui::badge>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-neutral-400">
                         {{ $user->email ?? '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-neutral-200">
                         {{ $user->full_name ?: '-' }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                        @if ($user->enabled)
-                            <x-nawasara-ui::badge color="success">Enabled</x-nawasara-ui::badge>
-                        @else
-                            <x-nawasara-ui::badge color="danger">Disabled</x-nawasara-ui::badge>
-                        @endif
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <x-nawasara-sync::sync-badge :status="$user->sync_status" :error="$user->sync_error" />
@@ -83,7 +84,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7">
+                    <td colspan="6">
                         @if ($this->lastSyncedAt === null)
                             {{-- Belum pernah sync — DB benar-benar kosong --}}
                             <x-nawasara-ui::empty-state
