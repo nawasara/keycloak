@@ -317,6 +317,71 @@ class KeycloakClient
         return $response->successful() ? $response->json() : [];
     }
 
+    // ─── Groups ─────────────────────────────────────────
+    //
+    // Used by nawasara/workspace to keep the `workspace-pilot` group equal to
+    // the pilot list (the Nextcloud door of the pilot gate). Needs the
+    // service account's manage-users role for the write calls.
+
+    /** Top-level group with exactly this name, or null. */
+    public function findGroupByName(string $name): ?array
+    {
+        $response = $this->api()->get($this->adminUrl('/groups'), ['search' => $name, 'exact' => 'true', 'briefRepresentation' => 'true']);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException("Gagal mencari grup Keycloak '{$name}': HTTP ".$response->status());
+        }
+
+        foreach ($response->json() ?? [] as $group) {
+            if (($group['name'] ?? null) === $name) {
+                return $group;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Every member of a group (paged internally).
+     *
+     * @return list<array{id: string, username: string}>
+     */
+    public function getGroupMembers(string $groupId, int $pageSize = 200): array
+    {
+        $members = [];
+        $first = 0;
+
+        do {
+            $response = $this->api()->get($this->adminUrl("/groups/{$groupId}/members"), [
+                'first' => $first, 'max' => $pageSize, 'briefRepresentation' => 'true',
+            ]);
+
+            // A failed page must not look like "the group is empty": the caller
+            // would then add everyone again, or worse, conclude nobody is in.
+            if (! $response->successful()) {
+                throw new \RuntimeException('Gagal membaca anggota grup Keycloak: HTTP '.$response->status());
+            }
+
+            $page = $response->json() ?? [];
+            foreach ($page as $u) {
+                $members[] = ['id' => (string) $u['id'], 'username' => (string) ($u['username'] ?? '')];
+            }
+            $first += count($page);
+        } while (count($page) === $pageSize);
+
+        return $members;
+    }
+
+    public function addUserToGroup(string $userId, string $groupId): bool
+    {
+        return $this->api()->put($this->adminUrl("/users/{$userId}/groups/{$groupId}"))->successful();
+    }
+
+    public function removeUserFromGroup(string $userId, string $groupId): bool
+    {
+        return $this->api()->delete($this->adminUrl("/users/{$userId}/groups/{$groupId}"))->successful();
+    }
+
     public function getUserRoleMappings(string $id): array
     {
         $response = $this->api()->get($this->adminUrl("/users/{$id}/role-mappings"));
