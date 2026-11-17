@@ -46,16 +46,16 @@ curl -H "Authorization: Bearer nws_xxx" \
 {
   "data": [
     {
-      "id": "8b085300-dc0d-497a-9f4a-47a6de80444f",
-      "username": "198106102003122002",
-      "name": "DIAN SULISTYOWATI WATIK SH",
-      "first_name": "DIAN",
-      "last_name": "SULISTYOWATI WATIK SH",
-      "nip": "198106102003122002",
-      "email": "diansulistyowati681@gmail.com",
+      "id": "00000000-0000-4000-8000-000000000001",
+      "username": "190001012020011001",
+      "name": "BUDI CONTOH",
+      "first_name": "BUDI",
+      "last_name": "CONTOH",
+      "nip": "190001012020011001",
+      "email": "budi.contoh@example.com",
       "email_verified": false,
       "enabled": true,
-      "created_at": "2025-10-09T03:30:09+00:00"
+      "created_at": "2025-01-01T00:00:00+00:00"
     }
   ],
   "meta": { "total": 1, "per_page": 10, "current_page": 1, "last_page": 1 }
