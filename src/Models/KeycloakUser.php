@@ -75,11 +75,27 @@ class KeycloakUser extends Model
 
     public function computeContentHash(): string
     {
+        // Names and attributes count too. Without them the hourly sync saw a
+        // user whose attributes changed (simas_* written by the authenticator
+        // on every login, 2.4.0) as "unchanged" and never stored them: on
+        // 18 Nov 2026 only 2 of 11 823 NIP accounts had simas_skpd, so almost
+        // no Kisara Workspace account could be given an OPD. Attributes are
+        // key-sorted: Keycloak does not promise an order, and an order change
+        // alone must not count as a change.
+        // getAttribute(), not $this->attributes: that is Eloquent's own property.
+        $attributes = $this->getAttribute('attributes');
+        if (is_array($attributes)) {
+            ksort($attributes);
+        }
+
         return hash('sha256', json_encode([
             'username' => $this->username,
             'email' => $this->email,
             'enabled' => $this->enabled,
             'email_verified' => $this->email_verified,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'attributes' => $attributes,
         ]));
     }
 
